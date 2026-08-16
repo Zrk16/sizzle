@@ -63,7 +63,7 @@ export default function Settings() {
     <main className={styles.page}>
       <header className={styles.pageHead}>
         <p className="slug">Scene 03 — Settings</p>
-        <h1 className={`award ${styles.pageTitle}`}>House rules</h1>
+        <h1 className={`display ${styles.pageTitle}`}>House rules</h1>
         <p className={styles.lede}>
           Stored in this browser only. There are no accounts, nothing is sent anywhere, and
           clearing your site data resets all of it.

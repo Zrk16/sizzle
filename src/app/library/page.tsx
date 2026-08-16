@@ -36,7 +36,7 @@ export default function Library() {
     <main className={styles.page}>
       <header className={styles.pageHead}>
         <p className="slug">Scene 02 — Library</p>
-        <h1 className={`award ${styles.pageTitle}`}>Previously screened</h1>
+        <h1 className={`display ${styles.pageTitle}`}>Previously screened</h1>
         <p className={styles.lede}>
           Every reel is cut from a repo&rsquo;s own commits and its own source. No two
           nominees get the same film, because no two nominees have the same history.

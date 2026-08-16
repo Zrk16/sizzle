@@ -15,9 +15,11 @@
 }
 
 .mark {
-  font-family: var(--font-award);
+  font-family: var(--font-display);
+  font-weight: 900;
   font-size: 1.25rem;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
   color: var(--accent);
 }
 

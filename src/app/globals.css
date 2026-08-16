@@ -1,13 +1,14 @@
 /* ---------------------------------------------------------------
    sizzle
 
-   An awards ceremony, not a dashboard. A sizzle reel is what plays
-   when a nominee is announced — so the repo you paste is the
-   nominee, and everything here is the room that screens it.
+   A sizzle reel is what plays when a nominee is announced — so the
+   repo you paste is the nominee, and this is the room that screens
+   it. But the register is molten, not ceremonial: fat rounded type
+   and liquid gold, closer to a title card than to a programme.
 
-   Two voices only: the award (Didone, gold, ceremonial) and the
-   script (mono, uppercase, technical). Nothing is decorative that
-   could instead be information.
+   Two voices only. The display voice is heavy and round, matching
+   the weight of the wordmark. The script voice is mono and technical
+   and carries every label, number and piece of chrome.
    --------------------------------------------------------------- */
 
 :root {
@@ -16,15 +17,15 @@
   --ink-3: #171a16;
   --bone: #ecefe6;
 
-  /* The award metal. Three stops so gold can be a gradient, which is
-     the only way a flat colour reads as metal rather than as yellow. */
-  --gold: #e8b64c;
-  --gold-hot: #ffe9a8;
-  --gold-deep: #8a5f18;
+  /* The metal. Three stops, because a flat fill reads as yellow and a
+     gradient reads as gold. */
+  --gold: #f0a91c;
+  --gold-hot: #ffe08a;
+  --gold-deep: #a35f08;
 
   --red: #e4572e;
 
-  /* Role tokens, same pattern the video engine uses for its grounds:
+  /* Role tokens, the same pattern the video engine uses for its grounds:
      a section overrides these and everything inside recolours without
      knowing which ground it is sitting on. */
   --ground: var(--ink);
@@ -37,9 +38,13 @@
 
   --gutter: clamp(1.25rem, 5vw, 4rem);
   --rule: 2px;
+  /* Everything is rounded. The mark is made of blobs; square corners
+     next to it look like a different product. */
+  --round: 16px;
+  --round-lg: 22px;
 
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
-  --font-award: var(--font-award), 'Bodoni Moda', 'Didot', 'Playfair Display', Georgia, serif;
+  --font-display: var(--font-archivo), 'Archivo', 'Arial Black', Helvetica, system-ui, sans-serif;
 }
 
 *,
@@ -118,18 +123,20 @@ video {
 
 /* --- the two voices ------------------------------------------------ */
 
-/* The award voice. Didone at scale, filled with metal rather than colour. */
-.award {
-  font-family: var(--font-award);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 0.9;
+/* The display voice. Heavy, tight and round, poured full of metal. The
+   gradient runs top-light to bottom-dark so the type reads as something
+   with a surface rather than as coloured text. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
   background: linear-gradient(
-    174deg,
-    var(--gold-hot) 4%,
-    var(--gold) 38%,
-    var(--gold-deep) 62%,
-    var(--gold) 88%
+    172deg,
+    var(--gold-hot) 2%,
+    var(--gold) 34%,
+    var(--gold-deep) 66%,
+    var(--gold) 92%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -145,8 +152,7 @@ video {
   color: color-mix(in srgb, var(--figure) 52%, transparent);
 }
 
-/* A scene rule. Borrowed from the script conceit and used as the only
-   horizontal divider on the site, so the page reads as a document. */
+/* The only horizontal divider on the site, so pages read as one document. */
 .sceneRule {
   border: 0;
   border-top: var(--rule) solid color-mix(in srgb, var(--figure) 14%, transparent);

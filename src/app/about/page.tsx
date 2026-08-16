@@ -17,7 +17,7 @@ export default function About() {
     <main className={styles.page}>
       <header className={styles.pageHead}>
         <p className="slug">Scene 04 — About</p>
-        <h1 className={`award ${styles.pageTitle}`}>Production notes</h1>
+        <h1 className={`display ${styles.pageTitle}`}>Production notes</h1>
       </header>
 
       <hr className="sceneRule" />

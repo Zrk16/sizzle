@@ -2,21 +2,46 @@
 
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import mark from '../../public/mark/manifest.json';
 import styles from './hero.module.css';
 
 /**
  * The wordmark drop.
  *
- * Letters are separate elements so each can fall on its own beat. Right now each one is
- * live Bodoni filled with the gold gradient; when the generated wordmark is sliced, the
- * glyph inside each span is swapped for its slice and the choreography below does not
- * change at all.
+ * The mark is one generated image sliced into six letter PNGs. Each slice is trimmed to
+ * its own bounding box, which is what makes per-letter animation possible — but trimming
+ * also destroys the shared baseline, so every letter is placed back using the position it
+ * held in the source. The manifest carries those positions; nothing here is hand-tuned.
  *
- * The fall is heavy on the way in and slow on the settle — `power3.in` accelerates like
- * something with weight, and the overshoot afterwards is what sells the mass. A single
- * eased tween in both directions reads like a slide, not a drop.
+ * Coordinates are normalised to the WORD's bounding box rather than the source image,
+ * because the generation has a large empty margin and laying out against the raw frame
+ * would leave most of the hero as dead space.
+ *
+ * The fall is heavy in and slow to settle: `power3.in` accelerates like something with
+ * mass, then a squash on impact and an elastic release. A single eased tween in both
+ * directions reads as a slide, not a drop. The molten drips are baked into the slices, so
+ * they arrive with the metal instead of being animated separately.
  */
-const LETTERS = ['S', 'I', 'Z', 'Z', 'L', 'E'];
+
+const { source, letters } = mark;
+
+const minLeft = Math.min(...letters.map((l) => l.left));
+const maxRight = Math.max(...letters.map((l) => l.left + l.widthPct));
+const minTop = Math.min(...letters.map((l) => l.top));
+const maxBottom = Math.max(...letters.map((l) => l.top + l.heightPct));
+
+const wordW = maxRight - minLeft;
+const wordH = maxBottom - minTop;
+const aspect = (wordW * source.width) / (wordH * source.height);
+
+/** Each letter, positioned as a percentage of the word's own box. */
+const PLACED = letters.map((l) => ({
+  ...l,
+  x: ((l.left - minLeft) / wordW) * 100,
+  y: ((l.top - minTop) / wordH) * 100,
+  w: (l.widthPct / wordW) * 100,
+  h: (l.heightPct / wordH) * 100,
+}));
 
 export function Hero({ children }: { children?: React.ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
@@ -27,40 +52,22 @@ export function Hero({ children }: { children?: React.ReactNode }) {
     if (!scope) return;
 
     const ctx = gsap.context(() => {
-      const letters = gsap.utils.toArray<HTMLElement>(`.${styles.letter}`);
-      const drips = gsap.utils.toArray<HTMLElement>(`.${styles.drip}`);
+      const glyphs = gsap.utils.toArray<HTMLElement>(`.${styles.letter}`);
+      gsap.set(glyphs, { yPercent: -260, opacity: 0, rotate: (i) => (i % 2 ? 4 : -4) });
 
-      gsap.set(letters, { yPercent: -140, opacity: 0, rotate: (i) => (i % 2 ? 5 : -5) });
-      gsap.set(drips, { scaleY: 0, opacity: 0 });
-
-      const tl = gsap.timeline({ defaults: { ease: 'power3.in' } });
-
-      tl.to(letters, {
-        yPercent: 0,
-        opacity: 1,
-        rotate: 0,
-        duration: 0.62,
-        stagger: 0.075,
-      })
-        // The settle. Squash on impact, then release — this is the beat that makes the
-        // letters feel like metal rather than like divs sliding into place.
+      gsap
+        .timeline({ defaults: { ease: 'power3.in' } })
+        .to(glyphs, { yPercent: 0, opacity: 1, rotate: 0, duration: 0.6, stagger: 0.08 })
         .to(
-          letters,
-          { scaleY: 0.9, scaleX: 1.06, duration: 0.09, stagger: 0.075, ease: 'power2.out' },
+          glyphs,
+          { scaleY: 0.9, scaleX: 1.07, duration: 0.09, stagger: 0.08, ease: 'power2.out' },
           '<'
         )
         .to(
-          letters,
-          { scaleY: 1, scaleX: 1, duration: 0.85, stagger: 0.075, ease: 'elastic.out(1, 0.4)' },
+          glyphs,
+          { scaleY: 1, scaleX: 1, duration: 0.9, stagger: 0.08, ease: 'elastic.out(1, 0.42)' },
           '>-0.02'
-        )
-        // Molten gold runs off the baseline once the metal has landed.
-        .to(
-          drips,
-          { scaleY: 1, opacity: 1, duration: 0.7, stagger: 0.11, ease: 'power2.in' },
-          '-=0.55'
-        )
-        .to(drips, { opacity: 0, duration: 1.1, stagger: 0.11, ease: 'power1.out' }, '>-0.25');
+        );
     }, root);
 
     return () => ctx.revert();
@@ -71,12 +78,27 @@ export function Hero({ children }: { children?: React.ReactNode }) {
       <p className={`slug ${styles.slugTop}`}>Scene 01 — Screening</p>
 
       <h1 className={styles.wordmark} aria-label="sizzle">
-        {LETTERS.map((char, i) => (
-          <span className={styles.letterWrap} key={`${char}-${i}`} aria-hidden>
-            <span className={`award ${styles.letter}`}>{char}</span>
-            <span className={styles.drip} />
-          </span>
-        ))}
+        <span className={styles.word} style={{ aspectRatio: String(aspect) }}>
+          {PLACED.map((l, i) => (
+            <span
+              key={`${l.char}-${i}`}
+              className={styles.letterWrap}
+              style={{ left: `${l.x}%`, top: `${l.y}%`, width: `${l.w}%`, height: `${l.h}%` }}
+              aria-hidden
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={l.src}
+                alt=""
+                width={l.width}
+                height={l.height}
+                className={styles.letter}
+                decoding="async"
+                fetchPriority={i < 3 ? 'high' : 'auto'}
+              />
+            </span>
+          ))}
+        </span>
       </h1>
 
       <p className={styles.tagline}>

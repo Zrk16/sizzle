@@ -1,0 +1,68 @@
+{
+  "source": {
+    "width": 2688,
+    "height": 1520
+  },
+  "letters": [
+    {
+      "char": "S",
+      "src": "/mark/0-S.png",
+      "width": 445,
+      "height": 743,
+      "left": 0.03385,
+      "top": 0.26579,
+      "widthPct": 0.16555,
+      "heightPct": 0.48882
+    },
+    {
+      "char": "I",
+      "src": "/mark/1-I.png",
+      "width": 220,
+      "height": 718,
+      "left": 0.22284,
+      "top": 0.27105,
+      "widthPct": 0.08185,
+      "heightPct": 0.47237
+    },
+    {
+      "char": "Z",
+      "src": "/mark/2-Z.png",
+      "width": 427,
+      "height": 719,
+      "left": 0.32738,
+      "top": 0.27237,
+      "widthPct": 0.15885,
+      "heightPct": 0.47303
+    },
+    {
+      "char": "Z",
+      "src": "/mark/3-Z.png",
+      "width": 427,
+      "height": 719,
+      "left": 0.50409,
+      "top": 0.27237,
+      "widthPct": 0.15885,
+      "heightPct": 0.47303
+    },
+    {
+      "char": "L",
+      "src": "/mark/4-L.png",
+      "width": 348,
+      "height": 719,
+      "left": 0.6808,
+      "top": 0.27237,
+      "widthPct": 0.12946,
+      "heightPct": 0.47303
+    },
+    {
+      "char": "E",
+      "src": "/mark/5-E.png",
+      "width": 385,
+      "height": 730,
+      "left": 0.82366,
+      "top": 0.27237,
+      "widthPct": 0.14323,
+      "heightPct": 0.48026
+    }
+  ]
+}
