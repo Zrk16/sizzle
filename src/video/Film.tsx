@@ -44,7 +44,13 @@ export const Film: React.FC<{ spec: RenderSpec }> = ({ spec }) => {
             durationInFrames={shot.durationInFrames}
             layout="none"
           >
-            <ShotFrame shot={shot} accent={spec.accent} />
+            <ShotFrame
+              shot={shot}
+              accent={spec.accent}
+              index={i}
+              total={spec.shots.length}
+              repo={spec.repo ?? ''}
+            />
           </Sequence>
         ))}
       </div>

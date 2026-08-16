@@ -2,6 +2,7 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { RenderShot } from '@/lib/spec';
 import { FONT, tokensFor } from './theme';
+import { Ground } from './Ground';
 import { cameraOffset, entrance, stagger, typedLength } from './motion';
 
 /**
@@ -64,7 +65,7 @@ const KineticLine: React.FC<{
   size: number;
   weight?: number;
   tracking?: string;
-}> = ({ text, local, colour, size, weight = 600, tracking = '-0.035em' }) => (
+}> = ({ text, local, colour, size, weight = 800, tracking = '-0.045em' }) => (
   <div
     style={{
       fontFamily: FONT.display,
@@ -96,7 +97,7 @@ const BigType: React.FC<ShotProps> = ({ shot, accent, local }) => {
   const t = tokensFor(shot.tone, accent);
   return (
     <div style={FILL}>
-      <KineticLine text={shot.text} local={local} colour={t.fg} size={132} />
+      <KineticLine text={shot.text} local={local} colour={t.fg} size={208} />
       {shot.caption && <Caption text={shot.caption} colour={t.dim} delay={10} local={local} />}
     </div>
   );
@@ -111,8 +112,8 @@ const Blowout: React.FC<ShotProps> = ({ shot, accent, local }) => {
       <div
         style={{
           fontFamily: FONT.display,
-          fontSize: 420,
-          fontWeight: 700,
+          fontSize: 560,
+          fontWeight: 900,
           letterSpacing: '-0.06em',
           lineHeight: 0.8,
           color: t.fg,
@@ -135,7 +136,7 @@ const TypeOn: React.FC<ShotProps> = ({ shot, accent, local }) => {
   const caretOn = Math.floor(local / 8) % 2 === 0 || shown < shot.text.length;
   return (
     <div style={FILL}>
-      <div style={{ fontFamily: FONT.mono, fontSize: 76, color: t.fg, letterSpacing: '-0.02em' }}>
+      <div style={{ fontFamily: FONT.mono, fontSize: 104, color: t.fg, letterSpacing: '-0.02em' }}>
         {shot.text.slice(0, shown)}
         <span style={{ color: t.pop(accent), opacity: caretOn ? 1 : 0 }}>▌</span>
       </div>
@@ -173,8 +174,8 @@ const CommitWall: React.FC<ShotProps> = ({ shot, accent, local }) => {
             key={i}
             style={{
               fontFamily: FONT.mono,
-              fontSize: 34,
-              lineHeight: 1.65,
+              fontSize: 40,
+              lineHeight: 1.62,
               color: i === 0 ? t.fg : t.dim,
               opacity: e.opacity,
               transform: `translateY(${e.y * 0.5}px)`,
@@ -202,8 +203,8 @@ const Code: React.FC<ShotProps> = ({ shot, accent, local }) => {
         <span
           style={{
             fontFamily: FONT.display,
-            fontSize: 46,
-            fontWeight: 600,
+            fontSize: 92,
+            fontWeight: 800,
             letterSpacing: '-0.03em',
             color: t.fg,
             opacity: entrance(local).opacity,
@@ -257,8 +258,8 @@ const Stat: React.FC<ShotProps> = ({ shot, accent, local }) => {
       <div
         style={{
           fontFamily: FONT.display,
-          fontSize: 250,
-          fontWeight: 700,
+          fontSize: 344,
+          fontWeight: 900,
           letterSpacing: '-0.055em',
           lineHeight: 0.86,
           color: t.pop(accent),
@@ -290,8 +291,8 @@ const Stack: React.FC<ShotProps> = ({ shot, accent, local }) => {
               borderRadius: 14,
               padding: '30px 40px',
               fontFamily: FONT.display,
-              fontSize: 54,
-              fontWeight: 550,
+              fontSize: 76,
+              fontWeight: 800,
               letterSpacing: '-0.03em',
               color: t.fg,
               opacity: e.opacity,
@@ -318,8 +319,8 @@ const Lockup: React.FC<ShotProps> = ({ shot, accent, local }) => {
       <div
         style={{
           fontFamily: FONT.display,
-          fontSize: 168,
-          fontWeight: 650,
+          fontSize: 296,
+          fontWeight: 900,
           letterSpacing: '-0.05em',
           color: t.fg,
           opacity: e.opacity,
@@ -354,6 +355,47 @@ const Lockup: React.FC<ShotProps> = ({ shot, accent, local }) => {
   );
 };
 
+
+/**
+ * Frame chrome — the index marker.
+ *
+ * Every reference film pairs massive display type against a tiny mono label, on EVERY
+ * frame, and the small type is what makes the big type feel big. Without it a frame is
+ * just a word on a colour, which is exactly how the first cut read.
+ *
+ * It sits OUTSIDE the travelling group deliberately: the camera moves the world, the
+ * chrome is fixed to the frame. Something static at the edge is what tells the eye that
+ * the rest is moving.
+ */
+const ShotChrome: React.FC<{
+  index: number;
+  total: number;
+  label: string;
+  colour: string;
+  accent: string;
+  local: number;
+}> = ({ index, total, label, colour, accent, local }) => {
+  const e = entrance(local, 4, 18);
+  const mono: React.CSSProperties = {
+    fontFamily: FONT.mono,
+    fontSize: 20,
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase',
+    opacity: e.opacity * 0.9,
+  };
+  return (
+    <>
+      <div style={{ position: 'absolute', top: 64, left: 132, ...mono, color: accent }}>
+        {String(index + 1).padStart(2, '0')}
+        <span style={{ color: colour, opacity: 0.45 }}> / {String(total).padStart(2, '0')}</span>
+      </div>
+      <div style={{ position: 'absolute', bottom: 64, left: 132, ...mono, color: colour, opacity: e.opacity * 0.5 }}>
+        {label}
+      </div>
+    </>
+  );
+};
+
 const REGISTRY = {
   bigtype: BigType,
   blowout: Blowout,
@@ -371,21 +413,43 @@ const REGISTRY = {
  * black stage measured 6% of the frame above luminance 40, and a whole-frame motion
  * metric then scores 94% of every frame at exactly zero.
  */
-export const ShotFrame: React.FC<{ shot: RenderShot; accent: string }> = ({ shot, accent }) => {
-  const frame = useCurrentFrame();
-  const local = frame - shot.startFrame;
+export const ShotFrame: React.FC<{
+  shot: RenderShot;
+  accent: string;
+  index: number;
+  total: number;
+  repo: string;
+}> = ({ shot, accent, index, total, repo }) => {
+  // `useCurrentFrame` inside a <Sequence> is ALREADY relative to that sequence's start.
+  // Subtracting startFrame again drove every shot after the first to a negative frame,
+  // which clamped its entrance to opacity 0 — so shot one played and the rest of the film
+  // was blank. The first shot survived only because its startFrame happens to be 0.
+  const local = useCurrentFrame();
   const t = tokensFor(shot.tone, accent);
   const Component = REGISTRY[shot.kind];
   const dy = cameraOffset(local, shot.durationInFrames, shot.cameraDy);
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: t.bg, overflow: 'hidden' }}>
-      {/* ground + content move together; oversized so travel never exposes an edge */}
+      {/* Ground and content travel together. A shot that is a small lit island on a dark
+          stage measured 6% of the frame above luminance 40, and a whole-frame motion
+          metric then scores 94% of every frame at exactly zero. Oversized vertically so
+          the camera move never exposes an edge. */}
       <div style={{ position: 'absolute', inset: '-12% 0', transform: `translateY(${dy}px)` }}>
+        <Ground tone={shot.tone} accent={accent} index={index} />
         <div style={{ position: 'absolute', inset: 0 }}>
           <Component shot={shot} accent={accent} local={local} />
         </div>
       </div>
+
+      <ShotChrome
+        index={index}
+        total={total}
+        label={repo}
+        colour={t.fg}
+        accent={t.pop(accent)}
+        local={local}
+      />
     </div>
   );
 };

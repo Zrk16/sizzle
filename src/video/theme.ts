@@ -66,16 +66,44 @@ export function readableOn(hex: string): '#0A0A0C' | '#FFFFFF' {
   return luma > 0.55 ? '#0A0A0C' : '#FFFFFF';
 }
 
+/** Mix a hex toward black by `amount` (0-1). */
+function deepen(hex: string, amount: number): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const f = (c: number) => Math.round(c * (1 - amount));
+  return `#${[f(r), f(g), f(b)].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * The accent, made safe for the ground it lands on.
+ *
+ * A bright accent that reads beautifully on ink is illegible on paper — a caption set in
+ * the raw accent over near-white measured as unreadable in review. Rather than banning
+ * bright accents, darken them where the ground demands it.
+ */
+export function accentOn(tone: Tone, accent: string): string {
+  if (tone === 'paper') return deepen(accent, 0.42);
+  if (tone === 'flood') return readableOn(accent);
+  return accent;
+}
+
 export function tokensFor(tone: Tone, accent: string): ToneTokens & { bg: string; fg: string } {
   const base = TONES[tone];
-  if (tone !== 'flood') return { ...base };
-  const fg = readableOn(accent);
+  if (tone !== 'flood') {
+    const safe = accentOn(tone, accent);
+    return { ...base, pop: () => safe };
+  }
+  // A flood ground at the raw accent is a full-frame screen colour — the neon case
+  // rendered as chroma key. Deepening it keeps the accent identifiable as the same hue
+  // while giving the type something it can actually sit on.
+  const bg = deepen(accent, 0.28);
+  const fg = readableOn(bg);
   return {
     ...base,
-    bg: accent,
+    bg,
     fg,
-    dim: fg === '#FFFFFF' ? 'rgba(255,255,255,0.62)' : 'rgba(10,10,12,0.55)',
-    rule: fg === '#FFFFFF' ? 'rgba(255,255,255,0.24)' : 'rgba(10,10,12,0.20)',
+    dim: fg === '#FFFFFF' ? 'rgba(255,255,255,0.66)' : 'rgba(10,10,12,0.58)',
+    rule: fg === '#FFFFFF' ? 'rgba(255,255,255,0.26)' : 'rgba(10,10,12,0.22)',
+    pop: () => fg,
   };
 }
 

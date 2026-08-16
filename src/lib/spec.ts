@@ -41,10 +41,26 @@ export const TONES = ['ink', 'paper', 'flood'] as const;
  */
 function isDefaultLookingColour(hex: string): boolean {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  const isCorner = [r, g, b].every((c) => c === 0 || c === 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  return isCorner || max < 45 || min > 220;
+  const max = Math.max(r, g, b) / 255;
+  const min = Math.min(r, g, b) / 255;
+  const lightness = (max + min) / 2;
+  const saturation = max === min ? 0 : (max - min) / (1 - Math.abs(2 * lightness - 1));
+
+  // Corner of the RGB cube — #FF0000, #00FF00, #FFFFFF and friends exist because of how
+  // bytes work, not because anyone looked at them.
+  if ([r, g, b].every((c) => c === 0 || c === 255)) return true;
+
+  // Too dark or too pale to do the accent's job: the ground already carries that contrast.
+  if (max < 0.18 || min > 0.86) return true;
+
+  // NEON. This is the one that got through: #00FF66 is not a cube corner (blue is 102),
+  // so an exact-value check passed it, and it rendered as a full-frame chroma-key green
+  // with black type on it. Fully saturated at mid-to-high lightness is a screen colour,
+  // not a brand colour — every accent that survived review sits under this line
+  // (#FF4D00, #4D7F8F, #F54749 all measure saturation < 1 or lightness < 0.5).
+  if (saturation > 0.92 && lightness > 0.42) return true;
+
+  return false;
 }
 
 export const shotSchema = z.object({
@@ -142,6 +158,8 @@ export type RenderSpec = {
   hook: string;
   accent: string;
   closer: string;
+  /** Shown in the frame chrome, so every shot is labelled with what it is about. */
+  repo: string;
   fps: number;
   width: number;
   height: number;
@@ -200,6 +218,7 @@ export function toRenderSpec(
     hook: ai.hook,
     accent: ai.accent,
     closer: ai.closer,
+    repo: facts.repo,
     fps: MOTION.fps,
     width,
     height,

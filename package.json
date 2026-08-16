@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "try": "tsx scripts/try.ts"
+    "try": "tsx scripts/try.ts",
+    "spec": "tsx scripts/make-spec.ts",
+    "film": "remotion render src/video/index.ts Film"
   },
   "dependencies": {
     "@remotion/player": "4.0.512",
@@ -22,6 +24,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@remotion/cli": "4.0.512",
     "@types/node": "^20",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

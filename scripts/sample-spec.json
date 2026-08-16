@@ -1,0 +1,101 @@
+{
+  "hook": "Does your scroll feel... rough?",
+  "accent": "#20B2AA",
+  "closer": "Smooth scroll, redefined.",
+  "repo": "lenis",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "durationInFrames": 462,
+  "shots": [
+    {
+      "kind": "bigtype",
+      "tone": "ink",
+      "text": "Does your scroll feel... rough?",
+      "startFrame": 0,
+      "durationInFrames": 66,
+      "cameraDy": 112
+    },
+    {
+      "kind": "bigtype",
+      "tone": "paper",
+      "text": "Rigid by default?",
+      "startFrame": 66,
+      "durationInFrames": 66,
+      "cameraDy": -112
+    },
+    {
+      "kind": "blowout",
+      "tone": "flood",
+      "text": "Smooth.",
+      "startFrame": 132,
+      "durationInFrames": 66,
+      "cameraDy": 112
+    },
+    {
+      "kind": "code",
+      "tone": "ink",
+      "text": "How it works, elegantly.",
+      "startFrame": 198,
+      "durationInFrames": 66,
+      "cameraDy": -112,
+      "payload": {
+        "type": "code",
+        "path": "packages/core/src/animate.ts",
+        "lines": [
+          "export class Animate {",
+          "  isRunning = false",
+          "  value = 0",
+          "  from = 0",
+          "  to = 0",
+          "  currentTime = 0",
+          "",
+          "  // These are instanciated in the fromTo method",
+          "  lerp?: number",
+          "  duration?: number",
+          "  easing?: EasingFunction",
+          "  onUpdate?: OnUpdateCallback",
+          "",
+          "  /**"
+        ]
+      }
+    },
+    {
+      "kind": "commitwall",
+      "tone": "paper",
+      "text": "Years of dedicated work.",
+      "startFrame": 264,
+      "durationInFrames": 66,
+      "cameraDy": 112,
+      "payload": {
+        "type": "commits",
+        "subjects": [
+          "v1.3.26",
+          "feat(core): respect prefers-reduced-motion by default (#534) (#537)",
+          "Update sponsor logos in README.md",
+          "Update sponsors section in README.md",
+          "v1.3.25",
+          "fix(core): resolve anchor targets with CSS-special-char ids (#520) (#526",
+          "v1.3.24",
+          "fix(core): don't scroll while dragging iOS text-selection handles (#524)"
+        ]
+      }
+    },
+    {
+      "kind": "stack",
+      "tone": "flood",
+      "text": "Fast. Flexible. Accessible.",
+      "startFrame": 330,
+      "durationInFrames": 66,
+      "cameraDy": -112
+    },
+    {
+      "kind": "lockup",
+      "tone": "ink",
+      "text": "lenis",
+      "startFrame": 396,
+      "durationInFrames": 66,
+      "cameraDy": 112
+    }
+  ]
+}
