@@ -153,10 +153,12 @@ export function Director() {
 
   return (
     <section className={styles.director}>
-      <hr className="sceneRule" />
+      <div className={styles.sceneHead}>
+        <p className="slug">Scene 02 — The cut</p>
+        <h2 className={`display ${styles.sceneTitle}`}>Your commit log is the script.</h2>
+      </div>
 
       <div className={styles.slate}>
-        <p className="slug">Nominee</p>
         <div className={styles.entry}>
           <input
             value={repo}
@@ -254,6 +256,9 @@ export function Director() {
                       <p className="slug">{ballot.label}</p>
                       <p className={passed ? styles.stampPass : styles.stampFail}>
                         {passed ? 'Passed' : 'Held'}
+                      </p>
+                      <p className="slug">
+                        {ballot.score.passed} of {ballot.score.total} clear
                       </p>
                     </header>
 

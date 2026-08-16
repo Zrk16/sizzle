@@ -1,24 +1,29 @@
+/* The first frame: black, the mark, one line. Nothing else.
+   No nav-plus-headline-plus-subhead-plus-button — that composition is the tell. */
+
 .hero {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: clamp(1.25rem, 3vh, 2rem);
-  padding: clamp(7rem, 17vh, 11rem) var(--gutter) clamp(2.5rem, 7vh, 4.5rem);
+  align-content: center;
+  gap: clamp(2.5rem, 7vh, 5rem);
+  min-height: 100svh;
+  padding: clamp(6rem, 14vh, 9rem) var(--gutter) clamp(4rem, 10vh, 7rem);
   text-align: center;
-}
-
-.slugTop {
-  margin: 0;
+  /* The drips fall past the bottom of the hero and into the scene below — the mark is
+     not contained by its own section. */
+  overflow: visible;
 }
 
 .wordmark {
   width: 100%;
-  max-width: 72rem;
+  max-width: 78rem;
   margin: 0;
   font-size: 0; /* the mark is images; kill the inline-block baseline gap */
 }
 
-/* The word's own box. Letters are placed inside it as percentages, so the whole mark
-   scales as one unit and the letters never drift apart at any viewport width. */
+/* The word's own box. Letters are placed inside as percentages so the mark scales as one
+   unit and never drifts apart at any viewport width. */
 .word {
   position: relative;
   display: block;
@@ -27,11 +32,11 @@
 
 .letterWrap {
   position: absolute;
-  /* Overflow stays visible: the fall starts far above this box. */
   overflow: visible;
 }
 
 .letter {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -41,8 +46,10 @@
 }
 
 .tagline {
-  max-width: 36ch;
-  font-size: clamp(0.875rem, 1.4vw, 1.0625rem);
-  line-height: 1.7;
-  color: color-mix(in srgb, var(--figure) 62%, transparent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  font-size: clamp(1.5rem, 4.2vw, 3.25rem);
+  line-height: 1;
+  color: var(--figure);
 }

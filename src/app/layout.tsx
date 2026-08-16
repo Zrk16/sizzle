@@ -3,6 +3,7 @@ import { Archivo } from 'next/font/google';
 import { GeistMono } from 'geist/font/mono';
 import { Nav } from '@/components/Nav';
 import { SmoothScroll } from '@/components/SmoothScroll';
+import { Goo } from '@/components/Goo';
 import './globals.css';
 
 /**
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${GeistMono.variable}`}>
       <body>
         <SmoothScroll />
+        <Goo />
         <Nav />
         {children}
       </body>

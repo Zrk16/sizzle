@@ -1,94 +1,131 @@
+/* Scene 02 — the app.
+   Composed as a page of a document, not a form in a card. No boxed fields, no card grid,
+   no rounded panels floating on a background: rules and type carry the structure, which
+   is what makes the reference sites read as designed rather than assembled. */
+
 .director {
+  position: relative;
   display: grid;
-  gap: clamp(1.5rem, 4vh, 2.5rem);
-  max-width: 68rem;
+  gap: clamp(2rem, 6vh, 3.5rem);
+  max-width: 82rem;
   margin: 0 auto;
-  padding: 0 var(--gutter) clamp(5rem, 14vh, 9rem);
+  padding: clamp(3rem, 10vh, 7rem) var(--gutter) clamp(6rem, 16vh, 10rem);
 }
 
-/* --- the slate ------------------------------------------------------ */
+.sceneHead {
+  display: grid;
+  gap: clamp(0.75rem, 2vh, 1.25rem);
+}
+
+.sceneTitle {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.88;
+  /* The peak of this page is the wordmark; this stays deliberately below it. */
+  font-size: clamp(2.5rem, 8vw, 6.5rem);
+  max-width: 16ch;
+}
+
+/* --- the entry line --------------------------------------------------- */
 
 .slate {
   display: grid;
-  gap: 1.25rem;
-  padding-top: clamp(1.5rem, 4vh, 2.5rem);
+  gap: clamp(1rem, 2.5vh, 1.6rem);
 }
 
 .entry {
   display: flex;
-  gap: 0.75rem;
+  align-items: baseline;
+  gap: clamp(1rem, 3vw, 2rem);
   flex-wrap: wrap;
+  padding-top: 1.1rem;
+  border-top: var(--rule) solid color-mix(in srgb, var(--figure) 16%, transparent);
 }
 
+/* A line to write on, not a box to fill in. */
 .input {
-  flex: 1 1 20rem;
-  padding: 1rem 1.15rem;
-  background: var(--ink-2);
-  border: 1px solid color-mix(in srgb, var(--figure) 14%, transparent);
-  border-radius: var(--round);
-  font-size: 1rem;
-  letter-spacing: 0.01em;
+  flex: 1 1 24rem;
+  padding: 0.4rem 0 0.6rem;
+  background: transparent;
+  border: 0;
+  border-bottom: var(--rule) solid color-mix(in srgb, var(--figure) 22%, transparent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: clamp(1.25rem, 3vw, 2.25rem);
   transition: border-color var(--charge);
 }
 
 .input::placeholder {
-  color: color-mix(in srgb, var(--figure) 34%, transparent);
+  color: color-mix(in srgb, var(--figure) 26%, transparent);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .row {
-  display: grid;
-  gap: 0.6rem;
+  display: flex;
+  align-items: baseline;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  flex-wrap: wrap;
 }
 
 .pills {
   display: flex;
-  gap: 0.5rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
+/* Text switches, not chips. A row of pills is the single most template-looking
+   control there is. */
 .pill {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.5rem 0.9rem;
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--figure) 14%, transparent);
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--figure) 62%, transparent);
-  transition: color var(--charge), border-color var(--charge);
+  gap: 0.45rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--figure) 42%, transparent);
+  transition: color var(--charge);
 }
 
 .pill:hover {
   color: var(--figure);
-  border-color: color-mix(in srgb, var(--figure) 30%, transparent);
 }
 
 .pillOn {
-  color: var(--ink);
+  color: var(--accent);
+}
+
+.pillOn::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
   background: var(--accent);
-  border-color: var(--accent);
+  translate: 0 -0.05rem;
 }
 
 .pillNote {
-  font-size: 0.6875rem;
-  opacity: 0.62;
+  display: none;
 }
 
-/* --- buttons -------------------------------------------------------- */
+/* --- buttons ---------------------------------------------------------- */
 
 .primary,
 .ghost {
-  padding: 0.9rem 1.6rem;
+  padding: 0.85rem 1.6rem;
   border-radius: 999px;
-  font-size: 0.8125rem;
-  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  font-weight: 700;
   transition: background var(--charge), color var(--charge), border-color var(--charge);
 }
 
@@ -96,7 +133,6 @@
   background: var(--accent);
   border: 1px solid var(--accent);
   color: var(--ink);
-  font-weight: 700;
 }
 
 .primary:hover:not(:disabled) {
@@ -106,7 +142,7 @@
 
 .ghost {
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--figure) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--figure) 26%, transparent);
   color: var(--figure);
 }
 
@@ -116,80 +152,72 @@
 
 .primary:disabled,
 .ghost:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: wait;
 }
 
-/* --- the screen ----------------------------------------------------- */
+/* --- the screen ------------------------------------------------------- */
 
 .screen {
-  border: 1px solid color-mix(in srgb, var(--figure) 12%, transparent);
-  border-radius: var(--round-lg);
   overflow: hidden;
   background: #000;
-  /* The one lit rectangle in a dark room. */
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 12%, transparent),
-    0 40px 120px -40px color-mix(in srgb, var(--gold) 22%, transparent);
+  border-radius: 4px;
+  /* The one lit rectangle in a dark room — light in darkness, so it needs no frame. */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 14%, transparent),
+    0 60px 160px -50px color-mix(in srgb, var(--gold) 26%, transparent);
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
 .status {
   color: var(--accent);
-  font-size: 0.8125rem;
-  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .error {
-  padding: 0.9rem 1.1rem;
-  border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
-  border-radius: var(--round);
+  padding-top: 1rem;
+  border-top: var(--rule) solid color-mix(in srgb, var(--red) 50%, transparent);
   color: var(--red);
   font-size: 0.875rem;
 }
 
-/* --- ballots -------------------------------------------------------- */
+/* --- ballots: a roll, not cards --------------------------------------- */
 
 .ballots {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: clamp(1.5rem, 4vh, 2.5rem);
 }
 
 .ballot {
   display: grid;
-  gap: 1rem;
-  align-content: start;
-  padding: 1.25rem;
-  background: var(--ink-2);
-  border: 1px solid color-mix(in srgb, var(--figure) 12%, transparent);
-  border-radius: var(--round-lg);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: start;
+  padding-top: 1.1rem;
+  border-top: var(--rule) solid color-mix(in srgb, var(--figure) 16%, transparent);
 }
 
 .ballotHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 0.85rem;
-  border-bottom: var(--rule) solid color-mix(in srgb, var(--figure) 12%, transparent);
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
 }
 
 .stampPass,
 .stampFail {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 1.5rem;
-  letter-spacing: -0.03em;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.045em;
+  line-height: 0.9;
   text-transform: uppercase;
-  /* Rotated like a stamp pressed onto a page, not a status chip. */
-  rotate: -4deg;
 }
 
 .stampPass {
@@ -197,25 +225,23 @@
 }
 
 .stampFail {
-  color: color-mix(in srgb, var(--red) 82%, transparent);
+  color: var(--red);
 }
 
 .metrics {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.55rem;
 }
 
 .metric {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 1rem;
+  align-items: baseline;
   font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--figure) 58%, transparent);
-}
-
-.metric dt::after {
-  content: '';
+  color: color-mix(in srgb, var(--figure) 54%, transparent);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--figure) 8%, transparent);
 }
 
 .metric dd {
@@ -229,22 +255,31 @@
 
 .notes {
   display: grid;
-  gap: 0.6rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid color-mix(in srgb, var(--figure) 10%, transparent);
+  gap: 0.7rem;
+  margin-top: 1rem;
 }
 
 .notes li {
   font-size: 0.8125rem;
-  line-height: 1.6;
-  color: color-mix(in srgb, var(--figure) 68%, transparent);
-  padding-left: 0.9rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--figure) 62%, transparent);
+  padding-left: 1rem;
   position: relative;
 }
 
 .notes li::before {
-  content: '—';
+  content: '';
   position: absolute;
   left: 0;
-  color: var(--accent);
+  top: 0.62em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+@media (max-width: 720px) {
+  .ballot {
+    grid-template-columns: 1fr;
+  }
 }
