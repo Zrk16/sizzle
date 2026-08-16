@@ -1,44 +1,37 @@
 {
-  "hook": "Does your scroll feel... rough?",
-  "accent": "#20B2AA",
-  "closer": "Smooth scroll, redefined.",
+  "hook": "Does your scroll feel...off?",
+  "accent": "#4A90E2",
+  "closer": "Smooth scroll, perfected.",
   "repo": "lenis",
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "durationInFrames": 462,
+  "durationInFrames": 330,
   "shots": [
     {
-      "kind": "bigtype",
+      "kind": "typeon",
       "tone": "ink",
-      "text": "Does your scroll feel... rough?",
+      "text": "Janky?",
       "startFrame": 0,
       "durationInFrames": 66,
       "cameraDy": 112
     },
     {
-      "kind": "bigtype",
+      "kind": "blowout",
       "tone": "paper",
-      "text": "Rigid by default?",
+      "text": "Smooth.",
       "startFrame": 66,
       "durationInFrames": 66,
       "cameraDy": -112
     },
     {
-      "kind": "blowout",
+      "kind": "code",
       "tone": "flood",
-      "text": "Smooth.",
+      "text": "The actual code",
+      "caption": "packages/core/src/animate.ts",
       "startFrame": 132,
       "durationInFrames": 66,
-      "cameraDy": 112
-    },
-    {
-      "kind": "code",
-      "tone": "ink",
-      "text": "How it works, elegantly.",
-      "startFrame": 198,
-      "durationInFrames": 66,
-      "cameraDy": -112,
+      "cameraDy": 112,
       "payload": {
         "type": "code",
         "path": "packages/core/src/animate.ts",
@@ -62,11 +55,11 @@
     },
     {
       "kind": "commitwall",
-      "tone": "paper",
-      "text": "Years of dedicated work.",
-      "startFrame": 264,
+      "tone": "ink",
+      "text": "1072 commits later",
+      "startFrame": 198,
       "durationInFrames": 66,
-      "cameraDy": 112,
+      "cameraDy": -112,
       "payload": {
         "type": "commits",
         "subjects": [
@@ -82,18 +75,10 @@
       }
     },
     {
-      "kind": "stack",
-      "tone": "flood",
-      "text": "Fast. Flexible. Accessible.",
-      "startFrame": 330,
-      "durationInFrames": 66,
-      "cameraDy": -112
-    },
-    {
       "kind": "lockup",
-      "tone": "ink",
+      "tone": "paper",
       "text": "lenis",
-      "startFrame": 396,
+      "startFrame": 264,
       "durationInFrames": 66,
       "cameraDy": 112
     }

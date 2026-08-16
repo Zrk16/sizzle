@@ -3,7 +3,7 @@ import { useCurrentFrame } from 'remotion';
 import type { RenderShot } from '@/lib/spec';
 import { FONT, tokensFor } from './theme';
 import { Ground } from './Ground';
-import { cameraOffset, entrance, stagger, typedLength } from './motion';
+import { ENERGY, cameraOffset, entrance, stagger, typedLength, type Energy } from './motion';
 
 /**
  * The shot vocabulary.
@@ -20,6 +20,8 @@ type ShotProps = {
   shot: RenderShot;
   accent: string;
   local: number; // frames since this shot started
+  /** Easing character for this beat. Calm shots arrive gently, punch shots snap. */
+  energy: Energy;
 };
 
 const FILL: React.CSSProperties = {
@@ -63,9 +65,10 @@ const KineticLine: React.FC<{
   local: number;
   colour: string;
   size: number;
+  energy: Energy;
   weight?: number;
   tracking?: string;
-}> = ({ text, local, colour, size, weight = 800, tracking = '-0.045em' }) => (
+}> = ({ text, local, colour, size, energy, weight = 800, tracking = '-0.045em' }) => (
   <div
     style={{
       fontFamily: FONT.display,
@@ -80,7 +83,7 @@ const KineticLine: React.FC<{
     }}
   >
     {text.split(' ').map((word, i) => {
-      const e = entrance(local, stagger(i));
+      const e = entrance(local, stagger(i), energy);
       return (
         <span
           key={`${word}-${i}`}
@@ -93,20 +96,20 @@ const KineticLine: React.FC<{
   </div>
 );
 
-const BigType: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const BigType: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
   return (
     <div style={FILL}>
-      <KineticLine text={shot.text} local={local} colour={t.fg} size={208} />
+      <KineticLine text={shot.text} local={local} colour={t.fg} size={208} energy={energy} />
       {shot.caption && <Caption text={shot.caption} colour={t.dim} delay={10} local={local} />}
     </div>
   );
 };
 
 /** One word, wider than the canvas. Deliberately clipped — the frame cannot hold it. */
-const Blowout: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const Blowout: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
-  const e = entrance(local, 0, 18);
+  const e = entrance(local, 0, energy);
   return (
     <div style={{ ...FILL, padding: 0, justifyContent: 'center', overflow: 'hidden' }}>
       <div
@@ -130,7 +133,7 @@ const Blowout: React.FC<ShotProps> = ({ shot, accent, local }) => {
 };
 
 /** Per-character reveal with a caret that sits exactly after the last glyph. */
-const TypeOn: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const TypeOn: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
   const shown = typedLength(local, shot.text.length);
   const caretOn = Math.floor(local / 8) % 2 === 0 || shown < shot.text.length;
@@ -149,7 +152,7 @@ const TypeOn: React.FC<ShotProps> = ({ shot, accent, local }) => {
  * The developer's real commit subjects. The single most personal thing in any repo —
  * nobody else's commit log looks like this, which is exactly why it cannot be generic.
  */
-const CommitWall: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const CommitWall: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
   const subjects = shot.payload?.type === 'commits' ? shot.payload.subjects : [];
   return (
@@ -161,14 +164,14 @@ const CommitWall: React.FC<ShotProps> = ({ shot, accent, local }) => {
           letterSpacing: '0.16em',
           textTransform: 'uppercase',
           color: t.pop(accent),
-          opacity: entrance(local).opacity,
+          opacity: entrance(local, 0, energy).opacity,
           marginBottom: 40,
         }}
       >
         {shot.text}
       </div>
       {subjects.map((subject, i) => {
-        const e = entrance(local, stagger(i, 2.5));
+        const e = entrance(local, stagger(i, 2.5), energy);
         return (
           <div
             key={i}
@@ -193,7 +196,7 @@ const CommitWall: React.FC<ShotProps> = ({ shot, accent, local }) => {
 };
 
 /** Real source from the repo, revealed line by line. Never paraphrased by the model. */
-const Code: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const Code: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
   const payload = shot.payload?.type === 'code' ? shot.payload : null;
   const lines = payload?.lines ?? [];
@@ -207,7 +210,7 @@ const Code: React.FC<ShotProps> = ({ shot, accent, local }) => {
             fontWeight: 800,
             letterSpacing: '-0.03em',
             color: t.fg,
-            opacity: entrance(local).opacity,
+            opacity: entrance(local, 0, energy).opacity,
           }}
         >
           {shot.text}
@@ -219,7 +222,7 @@ const Code: React.FC<ShotProps> = ({ shot, accent, local }) => {
               fontSize: 19,
               letterSpacing: '0.1em',
               color: t.pop(accent),
-              opacity: entrance(local, 6).opacity,
+              opacity: entrance(local, 6, energy).opacity,
             }}
           >
             {payload.path}
@@ -227,7 +230,7 @@ const Code: React.FC<ShotProps> = ({ shot, accent, local }) => {
         )}
       </div>
       {lines.map((line, i) => {
-        const e = entrance(local, stagger(i, 1.8));
+        const e = entrance(local, stagger(i, 1.8), energy);
         return (
           <div
             key={i}
@@ -250,9 +253,9 @@ const Code: React.FC<ShotProps> = ({ shot, accent, local }) => {
 };
 
 /** One number. Punctuation, never the payoff — the schema allows it at most once. */
-const Stat: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const Stat: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
-  const e = entrance(local, 0, 16);
+  const e = entrance(local, 0, energy);
   return (
     <div style={{ ...FILL, justifyContent: 'center' }}>
       <div
@@ -275,14 +278,14 @@ const Stat: React.FC<ShotProps> = ({ shot, accent, local }) => {
 };
 
 /** Cards dropping in with overshoot. Good for three things that belong together. */
-const Stack: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const Stack: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
   const items = shot.text.split(/[,·|]/).map((s) => s.trim()).filter(Boolean);
   const cards = items.length > 1 ? items : [shot.text];
   return (
     <div style={{ ...FILL, justifyContent: 'center', gap: 18 }}>
       {cards.map((item, i) => {
-        const e = entrance(local, stagger(i, 5), 16);
+        const e = entrance(local, stagger(i, 5), energy);
         return (
           <div
             key={i}
@@ -310,10 +313,10 @@ const Stack: React.FC<ShotProps> = ({ shot, accent, local }) => {
 };
 
 /** The ending. Name, a rule, one line. Always the last shot. */
-const Lockup: React.FC<ShotProps> = ({ shot, accent, local }) => {
+const Lockup: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
   const t = tokensFor(shot.tone, accent);
-  const e = entrance(local, 0, 18);
-  const rule = entrance(local, 8, 20);
+  const e = entrance(local, 0, energy);
+  const rule = entrance(local, 8, energy);
   return (
     <div style={{ ...FILL, justifyContent: 'center', alignItems: 'flex-start' }}>
       <div
@@ -345,7 +348,7 @@ const Lockup: React.FC<ShotProps> = ({ shot, accent, local }) => {
             letterSpacing: '0.13em',
             textTransform: 'uppercase',
             color: t.dim,
-            opacity: entrance(local, 16).opacity,
+            opacity: entrance(local, 16, energy).opacity,
           }}
         >
           {shot.caption}
@@ -375,7 +378,7 @@ const ShotChrome: React.FC<{
   accent: string;
   local: number;
 }> = ({ index, total, label, colour, accent, local }) => {
-  const e = entrance(local, 4, 18);
+  const e = entrance(local, 4, 'standard');
   const mono: React.CSSProperties = {
     fontFamily: FONT.mono,
     fontSize: 20,
@@ -427,6 +430,7 @@ export const ShotFrame: React.FC<{
   const local = useCurrentFrame();
   const t = tokensFor(shot.tone, accent);
   const Component = REGISTRY[shot.kind];
+  const energy = ENERGY[shot.kind] ?? 'standard';
   const dy = cameraOffset(local, shot.durationInFrames, shot.cameraDy);
 
   return (
@@ -438,7 +442,7 @@ export const ShotFrame: React.FC<{
       <div style={{ position: 'absolute', inset: '-12% 0', transform: `translateY(${dy}px)` }}>
         <Ground tone={shot.tone} accent={accent} index={index} />
         <div style={{ position: 'absolute', inset: 0 }}>
-          <Component shot={shot} accent={accent} local={local} />
+          <Component shot={shot} accent={accent} local={local} energy={energy} />
         </div>
       </div>
 

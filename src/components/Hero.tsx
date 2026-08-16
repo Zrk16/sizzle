@@ -87,11 +87,14 @@ export function Hero({ children }: { children?: React.ReactNode }) {
         // Heavy on the way in: power3.in accelerates like something with mass.
         .to(glyphs, { yPercent: 0, opacity: 1, rotate: 0, duration: 0.58, stagger: 0.07 })
         // Squash on impact, then release. A single eased tween in both directions reads as
-        // a slide; the squash is what makes the metal feel heavy.
+        // a slide; the squash is what gives the metal mass.
         .to(glyphs, { scaleY: 0.9, scaleX: 1.06, duration: 0.08, stagger: 0.07, ease: 'power2.out' }, '<')
+        // Release on a near-critically-damped spring, not elastic. Smooth beats bouncy:
+        // overshoot is a rare, explicitly-playful register and reads cheap as a default.
+        // At 0.82 damping the overshoot is about one percent — felt, not seen.
         .to(
           glyphs,
-          { scaleY: 1, scaleX: 1, duration: 0.9, stagger: 0.07, ease: 'elastic.out(1, 0.45)' },
+          { scaleY: 1, scaleX: 1, duration: 0.62, stagger: 0.07, ease: 'back.out(0.9)' },
           '>-0.02'
         );
     }, root);
