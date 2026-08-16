@@ -1,0 +1,4 @@
+# esbuild's postinstall fetches its platform-specific binary. It arrives via vite and tsx,
+# both dev-only. Without this, pnpm refuses to run any script in the project.
+allowBuilds:
+  esbuild: true

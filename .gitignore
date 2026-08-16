@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+out/
+
+# secrets — never commit. the repo for this project is PUBLIC.
+.env
+.env.local
+.env*.local
+
+*.log
+.DS_Store
