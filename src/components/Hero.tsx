@@ -67,12 +67,23 @@ export function Hero({ children }: { children?: React.ReactNode }) {
         gsap.set(glyphs, { yPercent: 0, opacity: 1, rotate: 0 });
         return;
       }
-      hasDropped = true;
 
       gsap.set(glyphs, { yPercent: -280, opacity: 0, rotate: (i) => (i % 2 ? 3.5 : -3.5) });
 
       gsap
-        .timeline({ defaults: { ease: 'power3.in' } })
+        .timeline({
+          defaults: { ease: 'power3.in' },
+          // Flag on COMPLETION, never on start. Setting it up front looked equivalent and
+          // meant the drop never played at all in development: React double-invokes
+          // effects, so mount one set the flag and began the drop, cleanup called
+          // ctx.revert() which undid it, and mount two saw the flag already true and
+          // snapped to the finished state. Flagging on complete makes the double-invoke
+          // harmless — the worst case is the timeline restarting from the top — while
+          // still skipping the intro on every later client-side navigation.
+          onComplete: () => {
+            hasDropped = true;
+          },
+        })
         // Heavy on the way in: power3.in accelerates like something with mass.
         .to(glyphs, { yPercent: 0, opacity: 1, rotate: 0, duration: 0.58, stagger: 0.07 })
         // Squash on impact, then release. A single eased tween in both directions reads as
