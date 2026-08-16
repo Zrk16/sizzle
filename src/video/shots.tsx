@@ -399,7 +399,71 @@ const ShotChrome: React.FC<{
   );
 };
 
+
+/**
+ * The claim. The one shot allowed a full sentence, and the reason the film explains
+ * anything at all.
+ *
+ * Every other string is capped near 34 characters, which is right for a display beat and
+ * useless for saying what a project does. Without this shot the cut was a question, some
+ * texture and a name — a viewer finished it knowing the project existed and nothing else.
+ *
+ * Set at reading size rather than display size on purpose: this is the one moment the
+ * film asks to be READ, and 200px type at eight words is a wall, not a sentence. The
+ * scale contrast against the shots either side is what marks it as the explanation.
+ */
+const Claim: React.FC<ShotProps> = ({ shot, accent, local, energy }) => {
+  const t = tokensFor(shot.tone, accent);
+  // Revealed phrase by phrase, so the eye is led along the sentence rather than hit with
+  // all of it at once. Splitting on words would stutter at this length.
+  const parts = shot.text.split(/(?<=,)\s+|\s+(?=(?:which|that|so|and|but))/i);
+  return (
+    <div style={{ ...FILL, justifyContent: 'center' }}>
+      <div
+        style={{
+          fontFamily: FONT.mono,
+          fontSize: 20,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: t.pop(accent),
+          opacity: entrance(local, 0, energy).opacity,
+          marginBottom: 34,
+        }}
+      >
+        What it is
+      </div>
+      <div
+        style={{
+          fontFamily: FONT.display,
+          fontSize: 78,
+          fontWeight: 700,
+          lineHeight: 1.12,
+          letterSpacing: '-0.025em',
+          color: t.fg,
+          maxWidth: 1360,
+        }}
+      >
+        {parts.map((part, i) => {
+          const e = entrance(local, 6 + i * 7, energy);
+          return (
+            <span
+              key={i}
+              style={{
+                display: 'inline',
+                opacity: e.opacity,
+              }}
+            >
+              {part}{' '}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const REGISTRY = {
+  claim: Claim,
   bigtype: BigType,
   blowout: Blowout,
   typeon: TypeOn,

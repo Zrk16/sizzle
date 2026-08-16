@@ -1,37 +1,46 @@
 {
-  "hook": "Does your scroll feel...off?",
-  "accent": "#4A90E2",
+  "hook": "Does your scroll feel... rough?",
+  "accent": "#006D6D",
   "closer": "Smooth scroll, perfected.",
   "repo": "lenis",
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "durationInFrames": 330,
+  "durationInFrames": 462,
   "shots": [
     {
-      "kind": "typeon",
+      "kind": "bigtype",
       "tone": "ink",
-      "text": "Janky?",
+      "text": "Janky scrolling?",
       "startFrame": 0,
       "durationInFrames": 66,
-      "cameraDy": 112
+      "cameraDy": 0
+    },
+    {
+      "kind": "claim",
+      "tone": "paper",
+      "text": "Lenis provides a smooth, customizable scroll experience for modern web applications.",
+      "startFrame": 66,
+      "durationInFrames": 66,
+      "cameraDy": 0
     },
     {
       "kind": "blowout",
-      "tone": "paper",
-      "text": "Smooth.",
-      "startFrame": 66,
+      "tone": "flood",
+      "text": "FRICTION",
+      "caption": "The old way",
+      "startFrame": 132,
       "durationInFrames": 66,
-      "cameraDy": -112
+      "cameraDy": 0
     },
     {
       "kind": "code",
-      "tone": "flood",
+      "tone": "ink",
       "text": "The actual code",
-      "caption": "packages/core/src/animate.ts",
-      "startFrame": 132,
+      "caption": "Precise control",
+      "startFrame": 198,
       "durationInFrames": 66,
-      "cameraDy": 112,
+      "cameraDy": -112,
       "payload": {
         "type": "code",
         "path": "packages/core/src/animate.ts",
@@ -55,11 +64,12 @@
     },
     {
       "kind": "commitwall",
-      "tone": "ink",
+      "tone": "paper",
       "text": "1072 commits later",
-      "startFrame": 198,
+      "caption": "Relentless refinement",
+      "startFrame": 264,
       "durationInFrames": 66,
-      "cameraDy": -112,
+      "cameraDy": 112,
       "payload": {
         "type": "commits",
         "subjects": [
@@ -75,12 +85,21 @@
       }
     },
     {
-      "kind": "lockup",
-      "tone": "paper",
-      "text": "lenis",
-      "startFrame": 264,
+      "kind": "stat",
+      "tone": "flood",
+      "text": "15,000+ stars",
+      "caption": "Loved by developers",
+      "startFrame": 330,
       "durationInFrames": 66,
-      "cameraDy": 112
+      "cameraDy": 0
+    },
+    {
+      "kind": "lockup",
+      "tone": "ink",
+      "text": "lenis",
+      "startFrame": 396,
+      "durationInFrames": 66,
+      "cameraDy": 0
     }
   ]
 }

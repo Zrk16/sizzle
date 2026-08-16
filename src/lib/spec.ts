@@ -17,6 +17,7 @@ import { z } from 'zod';
 /** Browser-safe shot kinds only. Anything needing backdrop-filter, blend modes or
  *  3D perspective is excluded — @remotion/web-renderer drops those silently. */
 export const SHOT_KINDS = [
+  'claim', // the one shot allowed a full sentence: what this project actually IS
   'bigtype', // oversized words, may exceed the frame
   'blowout', // one word wider than the canvas
   'typeon', // per-character reveal with a caret
@@ -75,7 +76,7 @@ export const shotSchema = z.object({
    * facts — asking a model to retype code it was shown is a pure downside: it paraphrases,
    * it truncates, and the one unfakeable thing on screen stops being true.
    */
-  text: z.string().min(1).max(34),
+  text: z.string().min(1).max(96),
   /** Optional second line, rendered small under `text` — the mono caption against the
    *  display statement. Scale contrast is principle 7 of the measured ad DNA. */
   caption: z.string().max(28).optional(),
@@ -117,6 +118,50 @@ export const aiSpecSchema = z
     if (kinds.at(-1) !== 'lockup') {
       ctx.addIssue({ code: 'custom', path: ['shots'], message: 'the last shot must be a lockup' });
     }
+
+    // EXACTLY ONE claim. Without it the film is a mood reel: a question, some texture,
+    // and a name, with nothing anywhere that says what the project does. With more than
+    // one it stops being a film and becomes a paragraph read aloud.
+    const claims = kinds.filter((k) => k === 'claim').length;
+    if (claims !== 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['shots'],
+        message:
+          claims === 0
+            ? 'there is no "claim" shot, so the film never says what this project actually does. Add exactly one, early, in a full plain sentence.'
+            : 'only one "claim" shot is allowed; the rest of the film is proof, not explanation.',
+      });
+    }
+    // The claim has to land before the proof, or the viewer is looking at evidence for
+    // something they have not been told yet.
+    const claimAt = kinds.indexOf('claim');
+    if (claimAt > 2) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['shots', claimAt],
+        message: 'the claim comes too late: it must be one of the first three shots.',
+      });
+    }
+
+    // Per-kind length. A claim needs room for a sentence; a blowout is one word.
+    spec.shots.forEach((shot, i) => {
+      const cap = shot.kind === 'claim' ? 96 : shot.kind === 'blowout' ? 14 : 34;
+      if (shot.text.length > cap) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['shots', i, 'text'],
+          message: `"${shot.kind}" text must be ${cap} characters or fewer (got ${shot.text.length}).`,
+        });
+      }
+      if (shot.kind === 'claim' && !/[a-z]\s+[a-z]/i.test(shot.text)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['shots', i, 'text'],
+          message: 'the claim must be a real sentence, not a fragment or a label.',
+        });
+      }
+    });
   });
 
 export type AiSpec = z.infer<typeof aiSpecSchema>;
@@ -203,15 +248,28 @@ export function toRenderSpec(
     const durationInFrames = per;
     const startFrame = cursor;
     cursor += durationInFrames;
-    // Alternate travel direction so consecutive shots do not feel like one long drift.
-    const magnitude = Math.max(MOTION.cameraTravel, durationInFrames * MOTION.minPxPerFrame);
-    return {
-      ...shot,
-      startFrame,
-      durationInFrames,
-      cameraDy: i % 2 === 0 ? magnitude : -magnitude,
-      payload,
-    };
+
+    /**
+     * The camera moves only where the SHOT needs it to.
+     *
+     * Every shot used to drift, because a rule said travel must be at least 1px/frame.
+     * That rule is real — sub-pixel velocity gets quantised into a 1px lurch and reads as
+     * juddering — but it describes how to move, not whether to. Applying it everywhere
+     * meant a static line of type slid around for no reason while the viewer was trying to
+     * read it, which is what "the movement feels forced" is: motion applied TO content
+     * rather than caused BY it.
+     *
+     * So: shots the eye travels through (a wall of commits, a block of source) get a
+     * dolly, because reading them is itself a downward move. Shots that are one held
+     * statement do not move at all. Anything that does move still clears the 1px floor.
+     */
+    const TRAVELS = new Set(['commitwall', 'code', 'stack']);
+    const cameraDy = TRAVELS.has(shot.kind)
+      ? (i % 2 === 0 ? 1 : -1) *
+        Math.max(MOTION.cameraTravel, durationInFrames * MOTION.minPxPerFrame)
+      : 0;
+
+    return { ...shot, startFrame, durationInFrames, cameraDy, payload };
   });
 
   return {
@@ -243,7 +301,11 @@ export const geminiResponseSchema = {
         properties: {
           kind: { type: 'string', enum: [...SHOT_KINDS] },
           tone: { type: 'string', enum: [...TONES] },
-          text: { type: 'string', description: 'On-screen copy. HARD LIMIT 34 characters.' },
+          text: {
+            type: 'string',
+            description:
+              'On-screen copy. A "claim" shot is a full plain sentence saying what the project does, up to 96 characters. A "blowout" is ONE word, up to 14. Everything else is up to 34.',
+          },
           caption: { type: 'string', description: 'Optional small line under the text. HARD LIMIT 28 characters.' },
         },
         required: ['kind', 'tone', 'text'],

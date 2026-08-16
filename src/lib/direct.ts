@@ -55,17 +55,27 @@ const SYSTEM = `You are directing a short launch video for a software project. Y
 
 RULES, in priority order:
 1. Never invent a number, a feature, or a claim. Everything on screen must trace to the facts given.
-2. The hook is a QUESTION that makes a developer curious. Not a slogan, not the project name.
-3. Adjacent shots must use different tones. ink is dark, paper is light, flood is the accent colour
+2. The film must EXPLAIN, not just evoke. A viewer who has never heard of this project must
+   finish it able to say what the project does. Structure: hook (a question) -> claim (what
+   it is, in a sentence) -> proof (its real code, its real commits, one number at most) ->
+   lockup. A sequence of moody fragments with a name at the end is a failure, however
+   good the individual lines are.
+3. The hook is a QUESTION that makes a developer curious. Not a slogan, not the project name.
+4. Adjacent shots must use different tones. ink is dark, paper is light, flood is the accent colour
    filling the frame. The tone change IS the cut — same tone twice reads as one long slide.
-4. The specific beats the generic. This project's real commit messages and real code are unfakeable
+5. The specific beats the generic. This project's real commit messages and real code are unfakeable
    and instantly personal. Star counts and language percentages are punctuation — use at most one
    'stat' shot, never as the opening or the payoff.
-5. Short is strong. Every string has a hard character limit; write under it, not up to it.
-6. The last shot is always a lockup.
-7. Pick ONE accent colour that suits this project. Not a rainbow, not a default blue.
+6. Short is strong. Every string has a hard character limit; write under it, not up to it.
+7. The last shot is always a lockup.
+8. Pick ONE accent colour that suits this project. Not a rainbow, not a default blue.
 
 Available shot kinds:
+  claim      - REQUIRED, exactly once, in the first three shots. One full plain sentence
+               saying what this project actually does, as you would explain it to a
+               developer who has never heard of it. Not a slogan, not a fragment, not the
+               project name. This is the only shot that is allowed to be a sentence, and
+               without it the film says nothing.
   bigtype    - oversized words, the display statement
   blowout    - a single word wider than the frame, for one hard beat
   typeon     - text revealed per character with a caret, good for a command or a claim

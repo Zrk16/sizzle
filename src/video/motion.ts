@@ -102,6 +102,7 @@ export type Energy = 'calm' | 'standard' | 'punch';
  * machine; a single word wider than the frame wants to land hard.
  */
 export const ENERGY: Record<string, Energy> = {
+  claim: 'calm', // it is being read, not hit
   commitwall: 'calm',
   code: 'calm',
   stack: 'standard',
