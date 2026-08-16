@@ -1,67 +1,119 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import mark from '../../public/mark/manifest.json';
 import styles from './hero.module.css';
 
 /**
- * The first frame: total black, six gold letters oversized to the point that the outer two
- * are cropped by the viewport, one mono line in the corner. No nav bar, no button, no
- * subhead — that composition is the tell the whole rebuild exists to remove.
+ * The first frame: black, the mark, one line, one mono marker. Nothing else — no nav bar
+ * in shot, no button, no subhead. That composition is the tell this rebuild removes.
  *
- * The mark MELTS rather than falls. Earlier passes tried per-letter physics on sliced PNGs
- * with CSS drips underneath, and the drips read as detached pills because a goo filter
- * cannot fuse shapes that are not genuinely overlapping at that scale. Generating the
- * melt gives real liquid behaviour — necking, surface tension, drips of different lengths
- * running at different speeds — that no amount of CSS was going to reach.
+ * The mark is one generated image sliced into six letter PNGs. Trimming each slice to its
+ * own bounding box is what makes per-letter animation possible and also destroys the
+ * shared baseline, so every letter is placed back at the position it held in the source.
+ * The manifest carries those positions; nothing here is hand-tuned.
  *
- * It plays ONCE and holds on the melted frame. The clip runs clean-to-molten, so looping
- * it would snap the gold back to solid; holding means the mark stays melted for as long as
- * you look at it. That also makes the entrance play on load and never on client-side
- * navigation, without any state to track.
+ * Coordinates normalise to the WORD's bounding box rather than the source frame, because
+ * the generation has a large empty margin and laying out against the raw image would leave
+ * most of the hero as dead space.
+ *
+ * Letters, not video. A generated melt clip was tried here and lost: 1276x720 upscaled past
+ * viewport width is visibly soft, where these slices are native 2688px.
  */
+
+const { source, letters } = mark;
+
+const minLeft = Math.min(...letters.map((l) => l.left));
+const maxRight = Math.max(...letters.map((l) => l.left + l.widthPct));
+const minTop = Math.min(...letters.map((l) => l.top));
+const maxBottom = Math.max(...letters.map((l) => l.top + l.heightPct));
+
+const wordW = maxRight - minLeft;
+const wordH = maxBottom - minTop;
+const aspect = (wordW * source.width) / (wordH * source.height);
+
+const PLACED = letters.map((l) => ({
+  ...l,
+  x: ((l.left - minLeft) / wordW) * 100,
+  y: ((l.top - minTop) / wordH) * 100,
+  w: (l.widthPct / wordW) * 100,
+  h: (l.heightPct / wordH) * 100,
+}));
+
+/**
+ * Module scope, deliberately — NOT sessionStorage.
+ *
+ * The drop should play when the page is actually loaded and never again while moving
+ * between scenes. A module variable is cleared by a real reload and survives client-side
+ * navigation, which is exactly that rule. sessionStorage would also suppress it on reload,
+ * which is the opposite of what it is for.
+ */
+let hasDropped = false;
+
 export function Hero({ children }: { children?: React.ReactNode }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const [ready, setReady] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = video.current;
-    if (!el) return;
+    const scope = root.current;
+    if (!scope) return;
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // Hold the fully melted frame instead of animating into it.
-      el.currentTime = el.duration || 4.9;
-      setReady(true);
-      return;
-    }
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Freeze on the last frame rather than looping back to solid gold.
-    const hold = () => {
-      el.pause();
-      el.currentTime = Math.max(0, (el.duration || 5) - 0.05);
-    };
-    el.addEventListener('ended', hold);
-    el.play().catch(() => setReady(true)); // autoplay refused: the poster still reads
-    return () => el.removeEventListener('ended', hold);
+    const ctx = gsap.context(() => {
+      const glyphs = gsap.utils.toArray<HTMLElement>(`.${styles.letter}`);
+
+      if (hasDropped || reduced) {
+        gsap.set(glyphs, { yPercent: 0, opacity: 1, rotate: 0 });
+        return;
+      }
+      hasDropped = true;
+
+      gsap.set(glyphs, { yPercent: -280, opacity: 0, rotate: (i) => (i % 2 ? 3.5 : -3.5) });
+
+      gsap
+        .timeline({ defaults: { ease: 'power3.in' } })
+        // Heavy on the way in: power3.in accelerates like something with mass.
+        .to(glyphs, { yPercent: 0, opacity: 1, rotate: 0, duration: 0.58, stagger: 0.07 })
+        // Squash on impact, then release. A single eased tween in both directions reads as
+        // a slide; the squash is what makes the metal feel heavy.
+        .to(glyphs, { scaleY: 0.9, scaleX: 1.06, duration: 0.08, stagger: 0.07, ease: 'power2.out' }, '<')
+        .to(
+          glyphs,
+          { scaleY: 1, scaleX: 1, duration: 0.9, stagger: 0.07, ease: 'elastic.out(1, 0.45)' },
+          '>-0.02'
+        );
+    }, root);
+
+    return () => ctx.revert();
   }, []);
 
   return (
-    <header className={styles.hero}>
+    <header className={styles.hero} ref={root}>
       <p className={`index ${styles.corner}`}>01 — THE MARK</p>
 
-      <h1 className={styles.wordmark}>
-        <span className={styles.visually}>sizzle</span>
-        <video
-          ref={video}
-          className={styles.mark}
-          src="/mark/sizzle-drip.mp4"
-          poster="/mark/sizzle-poster.jpg"
-          muted
-          playsInline
-          preload="auto"
-          aria-hidden
-          onLoadedData={() => setReady(true)}
-          data-ready={ready}
-        />
+      <h1 className={styles.wordmark} aria-label="sizzle">
+        <span className={styles.word} style={{ aspectRatio: String(aspect) }}>
+          {PLACED.map((l, i) => (
+            <span
+              key={`${l.char}-${i}`}
+              className={styles.letterWrap}
+              style={{ left: `${l.x}%`, top: `${l.y}%`, width: `${l.w}%`, height: `${l.h}%` }}
+              aria-hidden
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={l.src}
+                alt=""
+                width={l.width}
+                height={l.height}
+                className={styles.letter}
+                decoding="async"
+                fetchPriority={i < 3 ? 'high' : 'auto'}
+              />
+            </span>
+          ))}
+        </span>
       </h1>
 
       <p className={`display ${styles.line}`}>
