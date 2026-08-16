@@ -165,3 +165,41 @@ export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
 
   throw new DirectError(`Every model failed after ${attempts} attempts. Last: ${lastError}`);
 }
+
+/**
+ * The second half of the critique loop: the film has been rendered and measured, and the
+ * gate has complaints. Hand the model its own cut plus what the measurements said and let
+ * it fix the specific failures.
+ *
+ * This is the part that makes the AI a director rather than a copywriter — it is reacting
+ * to how its work actually turned out, not just generating once and hoping.
+ */
+export async function reviseVideo(
+  facts: RepoFacts,
+  previous: AiSpec,
+  notes: string[]
+): Promise<DirectResult> {
+  const prompt =
+    `Here are the facts for this project again:\n\n${factSheet(facts)}\n\n` +
+    `This is the cut you directed:\n${JSON.stringify(previous, null, 1)}\n\n` +
+    `It was rendered and measured. The gate reported these failures:\n` +
+    notes.map((n) => `- ${n}`).join('\n') +
+    `\n\nRevise the cut to fix every failure above. Keep what was working — the hook and the ` +
+    `overall idea should survive unless a failure is specifically about them. Change tones, ` +
+    `shot kinds, shot count and copy as needed.`;
+
+  let attempts = 0;
+  let lastError = 'no attempt made';
+  for (const model of MODELS) {
+    attempts++;
+    try {
+      const raw = await callGemini(model, prompt);
+      const parsed = aiSpecSchema.safeParse(raw);
+      if (parsed.success) return { spec: parsed.data, model, attempts };
+      lastError = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+  }
+  throw new DirectError(`Revision failed after ${attempts} attempts. Last: ${lastError}`);
+}

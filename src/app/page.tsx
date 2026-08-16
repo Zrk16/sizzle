@@ -1,25 +1,25 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Player } from '@remotion/player';
 import { Film } from '@/video/Film';
-import type { RenderSpec, Effort } from '@/lib/spec';
+import { critique } from '@/lib/critique';
+import { critiqueNotes } from '@/lib/score';
+import type { Score } from '@/lib/score';
+import type { RenderSpec, AiSpec, Effort } from '@/lib/spec';
 
 /**
  * Functional shell. The visual design pass is a separate job — this exists to prove the
- * whole path end to end: repo -> facts -> AI direction -> playing film -> MP4 in hand.
+ * whole path: repo -> facts -> AI direction -> playing film -> measured -> revised -> MP4.
  *
- * The render happens HERE, in the visitor's browser, via @remotion/web-renderer. That is
- * what makes the effort slider free: a longer render costs the visitor seconds on their
- * own GPU and costs the service nothing at all.
+ * The render and the grading both happen HERE, in the visitor's browser. That is what
+ * makes the effort slider free and what makes the critique loop something you can watch
+ * rather than something claimed in a README.
  */
 
 type Meta = {
   owner: string;
   repo: string;
-  stars: number;
-  commits: number | null;
-  language: string | null;
   model: string;
   attempts: number;
   analyzeMs: number;
@@ -32,21 +32,31 @@ const EFFORTS: { id: Effort; label: string; note: string }[] = [
   { id: 'cinematic', label: 'Cinematic', note: 'longer holds' },
 ];
 
+const PANEL: React.CSSProperties = {
+  border: '1px solid rgba(244,243,240,0.12)',
+  borderRadius: 12,
+  padding: 18,
+};
+
 export default function Home() {
   const [repo, setRepo] = useState('');
   const [effort, setEffort] = useState<Effort>('balanced');
+  const [ai, setAi] = useState<AiSpec | null>(null);
   const [spec, setSpec] = useState<RenderSpec | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [history, setHistory] = useState<{ score: Score; label: string }[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [rendering, setRendering] = useState(false);
+  const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
 
   const direct = useCallback(async () => {
-    if (!repo.trim()) return;
+    if (!repo.trim() || busy) return;
+    setBusy(true);
     setError(null);
     setSpec(null);
-    setMeta(null);
+    setAi(null);
+    setHistory([]);
     setStatus('Reading the repo…');
     try {
       const res = await fetch('/api/direct', {
@@ -56,29 +66,69 @@ export default function Home() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      setAi(json.ai);
       setSpec(json.spec);
       setMeta(json.meta);
       setStatus(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setStatus(null);
+    } finally {
+      setBusy(false);
     }
-  }, [repo, effort]);
+  }, [repo, effort, busy]);
+
+  /** Render a proxy, measure it, and if the gate complains, let the director fix it. */
+  const improve = useCallback(async () => {
+    if (!spec || !ai || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const first = await critique(spec, Film, setStatus);
+      setHistory([{ score: first.score, label: 'First cut' }]);
+
+      const notes = critiqueNotes(first.score);
+      if (!notes.length) {
+        setStatus(null);
+        setBusy(false);
+        return;
+      }
+
+      setStatus(`${notes.length} problem${notes.length > 1 ? 's' : ''} found — revising…`);
+      const res = await fetch('/api/revise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo, previous: ai, notes, effort }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+
+      setAi(json.ai);
+      setSpec(json.spec);
+      const second = await critique(json.spec, Film, setStatus);
+      setHistory((h) => [...h, { score: second.score, label: 'After revision' }]);
+      setStatus(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setStatus(null);
+    } finally {
+      setBusy(false);
+    }
+  }, [spec, ai, repo, effort, busy]);
 
   const download = useCallback(async () => {
-    if (!spec) return;
-    setRendering(true);
+    if (!spec || busy) return;
+    setBusy(true);
     setError(null);
     setStatus('Rendering in your browser…');
     abort.current = new AbortController();
     try {
-      // Imported lazily: the renderer is a large chunk and most visitors watch without
-      // ever downloading, so it should not be in the initial bundle.
       const { renderMediaOnWeb } = await import('@remotion/web-renderer');
       const { getBlob } = await renderMediaOnWeb({
         licenseKey: 'free-license',
         composition: {
-          component: Film as React.FC,
+          component: Film,
+          defaultProps: { spec },
           durationInFrames: spec.durationInFrames,
           fps: spec.fps,
           width: spec.width,
@@ -88,8 +138,7 @@ export default function Home() {
         inputProps: { spec },
         signal: abort.current.signal,
       });
-      const blob = await getBlob();
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(await getBlob());
       const a = document.createElement('a');
       a.href = url;
       a.download = `${meta?.repo ?? 'sizzle'}.mp4`;
@@ -104,14 +153,9 @@ export default function Home() {
       setError(e instanceof Error ? e.message : String(e));
       setStatus(null);
     } finally {
-      setRendering(false);
+      setBusy(false);
     }
-  }, [spec, meta]);
-
-  const seconds = useMemo(
-    () => (spec ? (spec.durationInFrames / spec.fps).toFixed(1) : null),
-    [spec]
-  );
+  }, [spec, meta, busy]);
 
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '64px 32px 96px' }}>
@@ -138,12 +182,12 @@ export default function Home() {
         />
         <button
           onClick={direct}
-          disabled={!!status || rendering}
+          disabled={busy}
           style={{
             padding: '14px 26px',
             borderRadius: 10,
             border: 0,
-            background: '#FF4D00',
+            background: busy ? '#3a3a3e' : '#FF4D00',
             color: '#fff',
             fontWeight: 600,
           }}
@@ -173,9 +217,7 @@ export default function Home() {
 
       {status && <p style={{ color: '#FF4D00' }}>{status}</p>}
       {error && (
-        <p style={{ color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', padding: 14, borderRadius: 10 }}>
-          {error}
-        </p>
+        <p style={{ ...PANEL, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}>{error}</p>
       )}
 
       {spec && (
@@ -195,10 +237,24 @@ export default function Home() {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 18, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 18, flexWrap: 'wrap' }}>
+            <button
+              onClick={improve}
+              disabled={busy}
+              style={{
+                padding: '13px 24px',
+                borderRadius: 10,
+                border: '1px solid #FF4D00',
+                background: 'rgba(255,77,0,0.1)',
+                color: '#FF4D00',
+                fontWeight: 600,
+              }}
+            >
+              Grade &amp; improve
+            </button>
             <button
               onClick={download}
-              disabled={rendering}
+              disabled={busy}
               style={{
                 padding: '13px 24px',
                 borderRadius: 10,
@@ -208,15 +264,55 @@ export default function Home() {
                 fontWeight: 600,
               }}
             >
-              {rendering ? 'Rendering…' : 'Download MP4'}
+              Download MP4
             </button>
             {meta && (
               <span style={{ color: 'rgba(244,243,240,0.45)', fontSize: 14 }}>
-                {spec.shots.length} shots · {seconds}s · directed by {meta.model} in{' '}
-                {meta.attempts} attempt{meta.attempts > 1 ? 's' : ''} ({meta.directMs}ms)
+                {spec.shots.length} shots · {(spec.durationInFrames / spec.fps).toFixed(1)}s ·{' '}
+                {meta.model}
               </span>
             )}
           </div>
+
+          {history.length > 0 && (
+            <div style={{ ...PANEL, marginTop: 22 }}>
+              {history.map((h, i) => (
+                <div key={i} style={{ marginBottom: i < history.length - 1 ? 20 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <strong style={{ fontSize: 15 }}>{h.label}</strong>
+                    <span
+                      style={{
+                        fontFamily: 'ui-monospace, monospace',
+                        color: h.score.passed === h.score.total ? '#4ade80' : '#FF4D00',
+                      }}
+                    >
+                      {h.score.passed}/{h.score.total}
+                    </span>
+                  </div>
+                  {h.score.metrics.map((m) => (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        fontSize: 13,
+                        fontFamily: 'ui-monospace, monospace',
+                        color: m.ok ? 'rgba(244,243,240,0.5)' : '#f87171',
+                        lineHeight: 1.9,
+                      }}
+                    >
+                      <span style={{ width: 14 }}>{m.ok ? '✓' : '✕'}</span>
+                      <span style={{ width: 150 }}>{m.label}</span>
+                      <span>
+                        {m.value}
+                        {m.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </main>

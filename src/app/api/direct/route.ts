@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     const { spec: ai, model, attempts } = await directVideo(facts);
 
     return NextResponse.json({
+      ai,
       spec: toRenderSpec(ai, facts, effort),
       meta: {
         owner: facts.owner,
