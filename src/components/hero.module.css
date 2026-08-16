@@ -5,7 +5,7 @@
   position: relative;
   display: grid;
   align-content: center;
-  justify-items: start;
+  justify-items: stretch;
   gap: clamp(2rem, 6vh, 4rem);
   min-height: 100svh;
   padding: clamp(6rem, 14vh, 9rem) var(--gutter) clamp(3rem, 8vh, 5rem);
@@ -17,13 +17,13 @@
   left: var(--gutter);
 }
 
-/* The mark runs past the viewport so the outer letters are cropped by the frame — the
-   object is not contained by its own section. `overflow-x: clip` on html and body is what
-   keeps that from becoming a scrollbar. */
+/* The whole mark stays in frame. An earlier pass ran it past the viewport edges on
+   purpose so the outer letters were cropped; that reads as a sizing mistake rather than
+   as intent, so the mark is now fully contained inside the page gutters. */
 .wordmark {
-  width: min(112vw, 1500px);
-  margin-left: calc(var(--gutter) * -1 - 1.5vw);
-  margin-bottom: 0;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0;
   font-size: 0; /* the mark is images; kill the inline-block baseline gap */
 }
 
