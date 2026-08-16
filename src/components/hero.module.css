@@ -1,55 +1,60 @@
-/* The first frame: black, the mark, one line. Nothing else.
-   No nav-plus-headline-plus-subhead-plus-button — that composition is the tell. */
+/* First frame law: black, the mark, one line, one mono marker. Nothing else on screen.
+   No gradients anywhere — the category's fail tells are gradients, shadows and timid type. */
 
 .hero {
   position: relative;
   display: grid;
-  justify-items: center;
   align-content: center;
-  gap: clamp(2.5rem, 7vh, 5rem);
+  justify-items: start;
+  gap: clamp(1.5rem, 5vh, 3rem);
   min-height: 100svh;
-  padding: clamp(6rem, 14vh, 9rem) var(--gutter) clamp(4rem, 10vh, 7rem);
-  text-align: center;
-  /* The drips fall past the bottom of the hero and into the scene below — the mark is
-     not contained by its own section. */
-  overflow: visible;
+  padding: clamp(6rem, 14vh, 9rem) var(--gutter) clamp(3rem, 8vh, 5rem);
+}
+
+.corner {
+  position: absolute;
+  top: clamp(5rem, 11vh, 7rem);
+  left: var(--gutter);
 }
 
 .wordmark {
-  width: 100%;
-  max-width: 78rem;
-  margin: 0;
-  font-size: 0; /* the mark is images; kill the inline-block baseline gap */
+  /* Oversized past the viewport so the outer letters are cropped by the frame.
+     The mark is not contained by its own section — that is the signature move. */
+  width: min(122vw, 1600px);
+  margin-left: calc(var(--gutter) * -1 - 3vw);
+  font-size: 0;
 }
 
-/* The word's own box. Letters are placed inside as percentages so the mark scales as one
-   unit and never drifts apart at any viewport width. */
-.word {
-  position: relative;
-  display: block;
+.mark {
   width: 100%;
+  height: auto;
+  /* The clip is gold on pure black and the ground is near-black, so the edges of the
+     frame dissolve into the page without any mask or fade. */
+  background: #000;
+  /* Held invisible until the first frame decodes, so there is never a white flash or a
+     half-loaded poster on a black page. */
+  opacity: 0;
+  transition: opacity 420ms var(--ease);
 }
 
-.letterWrap {
+.mark[data-ready='true'] {
+  opacity: 1;
+}
+
+.line {
+  font-size: clamp(2rem, 7vw, 5.5rem);
+  max-width: 16ch;
+}
+
+/* Screen-reader text: the mark carries the word visually, so the word must exist in the
+   accessibility tree too. */
+.visually {
   position: absolute;
-  overflow: visible;
-}
-
-.letter {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transform-origin: 50% 100%;
-  will-change: transform, opacity;
-}
-
-.tagline {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  font-size: clamp(1.5rem, 4.2vw, 3.25rem);
-  line-height: 1;
-  color: var(--figure);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

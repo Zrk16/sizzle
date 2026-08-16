@@ -1,21 +1,26 @@
 import type { Metadata } from 'next';
-import { Archivo } from 'next/font/google';
+import { Bricolage_Grotesque } from 'next/font/google';
 import { GeistMono } from 'geist/font/mono';
 import { Nav } from '@/components/Nav';
 import { SmoothScroll } from '@/components/SmoothScroll';
-import { Goo } from '@/components/Goo';
 import './globals.css';
 
 /**
- * Two faces, two voices. Archivo at 800-900 is heavy and round — it carries the same
- * weight as the molten wordmark instead of arguing with it. A Didone was tried here first
- * and read as a ceremony programme: correct for an awards conceit, wrong for a thing
- * called sizzle. Geist Mono carries every label and number, so the chrome stays technical.
+ * Two faces, two voices.
+ *
+ * Bricolage Grotesque carries the display. It has a variable optical-size axis and real
+ * irregularity in the letterforms, which is the point: Archivo, Inter, Poppins and Space
+ * Grotesk are the faces every generated site reaches for, and a heavy neutral grotesk with
+ * tight tracking reads as AI on sight no matter what is set in it. A Didone was tried
+ * before that and read as a ceremony programme.
+ *
+ * Geist Mono carries every label, number and index marker, so the chrome stays technical
+ * against the display.
  */
-const display = Archivo({
+const display = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['600', '800', '900'],
-  variable: '--font-archivo',
+  weight: ['400', '600', '800'],
+  variable: '--font-display-face',
   display: 'swap',
 });
 
@@ -30,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${GeistMono.variable}`}>
       <body>
         <SmoothScroll />
-        <Goo />
         <Nav />
         {children}
       </body>

@@ -19,7 +19,7 @@
 
 .sceneTitle {
   font-family: var(--font-display);
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: -0.045em;
   line-height: 0.88;
   /* The peak of this page is the wordmark; this stays deliberately below it. */
@@ -125,7 +125,7 @@
   font-size: 0.75rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 600;
   transition: background var(--charge), color var(--charge), border-color var(--charge);
 }
 
@@ -136,8 +136,8 @@
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--gold-hot);
-  border-color: var(--gold-hot);
+  background: var(--figure);
+  border-color: var(--figure);
 }
 
 .ghost {
@@ -213,7 +213,7 @@
 .stampPass,
 .stampFail {
   font-family: var(--font-display);
-  font-weight: 900;
+  font-weight: 800;
   font-size: clamp(2rem, 5vw, 3.5rem);
   letter-spacing: -0.045em;
   line-height: 0.9;

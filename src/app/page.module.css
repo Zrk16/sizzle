@@ -17,7 +17,7 @@
 
 .pageTitle {
   font-size: clamp(2.75rem, 8vw, 6rem);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .lede {
@@ -71,7 +71,7 @@
   align-self: center;
   padding: 0.55rem 1rem;
   border: 1px solid color-mix(in srgb, var(--figure) 20%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -150,7 +150,7 @@
   padding: 0.5rem 0.95rem;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--figure) 16%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.8125rem;
   color: color-mix(in srgb, var(--figure) 64%, transparent);
   transition: color var(--charge), border-color var(--charge), background var(--charge);
@@ -170,7 +170,7 @@
   padding: 0.8rem 1rem;
   background: var(--ink-2);
   border: 1px solid color-mix(in srgb, var(--figure) 14%, transparent);
-  border-radius: var(--round);
+  border-radius: 0;
   font-size: 0.875rem;
 }
 
