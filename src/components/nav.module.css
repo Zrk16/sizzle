@@ -1,0 +1,60 @@
+.nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem var(--gutter);
+  /* A hairline, not a bar. The nav should read as the top edge of a page in a
+     document, which means it carries a rule and nothing else. */
+  border-bottom: 1px solid color-mix(in srgb, var(--figure) 10%, transparent);
+  background: color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.mark {
+  font-family: var(--font-award);
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.scenes {
+  display: flex;
+  gap: clamp(0.75rem, 2.5vw, 2rem);
+}
+
+.scene {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--figure) 48%, transparent);
+  padding-top: 0.35rem;
+  border-top: var(--rule) solid transparent;
+  transition: color var(--charge), border-color var(--charge);
+}
+
+.scene:hover {
+  color: var(--figure);
+}
+
+.active {
+  color: var(--figure);
+  border-top-color: var(--accent);
+}
+
+.n {
+  color: var(--accent);
+  font-size: 0.6875rem;
+}
+
+@media (max-width: 640px) {
+  .scene span:last-child {
+    display: none;
+  }
+}

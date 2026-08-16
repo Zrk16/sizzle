@@ -1,24 +1,164 @@
+/* ---------------------------------------------------------------
+   sizzle
+
+   An awards ceremony, not a dashboard. A sizzle reel is what plays
+   when a nominee is announced — so the repo you paste is the
+   nominee, and everything here is the room that screens it.
+
+   Two voices only: the award (Didone, gold, ceremonial) and the
+   script (mono, uppercase, technical). Nothing is decorative that
+   could instead be information.
+   --------------------------------------------------------------- */
+
+:root {
+  --ink: #0a0c0a;
+  --ink-2: #101310;
+  --ink-3: #171a16;
+  --bone: #ecefe6;
+
+  /* The award metal. Three stops so gold can be a gradient, which is
+     the only way a flat colour reads as metal rather than as yellow. */
+  --gold: #e8b64c;
+  --gold-hot: #ffe9a8;
+  --gold-deep: #8a5f18;
+
+  --red: #e4572e;
+
+  /* Role tokens, same pattern the video engine uses for its grounds:
+     a section overrides these and everything inside recolours without
+     knowing which ground it is sitting on. */
+  --ground: var(--ink);
+  --figure: var(--bone);
+  --accent: var(--gold);
+
+  /* Fast in, slow out. The entrance is a snap; the settle is long. */
+  --charge: 90ms cubic-bezier(0.2, 0, 0.1, 1);
+  --decay: 1100ms cubic-bezier(0.16, 0.6, 0.2, 1);
+
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+  --rule: 2px;
+
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-award: var(--font-award), 'Bodoni Moda', 'Didot', 'Playfair Display', Georgia, serif;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-html,
+html {
+  background: var(--ink);
+  /* Lenis drives scrolling; the native smooth behaviour fights it. */
+  scroll-behavior: auto;
+}
+
 body {
   margin: 0;
-  padding: 0;
-  background: #0a0a0c;
-  color: #f4f3f0;
-  font-family: 'Helvetica Neue', Inter, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  background: var(--ground);
+  color: var(--figure);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+p,
+figure,
+ul,
+ol,
+dl,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 button {
   font: inherit;
+  color: inherit;
   cursor: pointer;
 }
 
-input {
+input,
+select {
   font: inherit;
+  color: inherit;
+}
+
+img,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* --- the two voices ------------------------------------------------ */
+
+/* The award voice. Didone at scale, filled with metal rather than colour. */
+.award {
+  font-family: var(--font-award);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  background: linear-gradient(
+    174deg,
+    var(--gold-hot) 4%,
+    var(--gold) 38%,
+    var(--gold-deep) 62%,
+    var(--gold) 88%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* The script voice. Every label, every number, every piece of chrome. */
+.slug {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--figure) 52%, transparent);
+}
+
+/* A scene rule. Borrowed from the script conceit and used as the only
+   horizontal divider on the site, so the page reads as a document. */
+.sceneRule {
+  border: 0;
+  border-top: var(--rule) solid color-mix(in srgb, var(--figure) 14%, transparent);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

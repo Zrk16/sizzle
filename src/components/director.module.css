@@ -1,0 +1,248 @@
+.director {
+  display: grid;
+  gap: clamp(1.5rem, 4vh, 2.5rem);
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 0 var(--gutter) clamp(5rem, 14vh, 9rem);
+}
+
+/* --- the slate ------------------------------------------------------ */
+
+.slate {
+  display: grid;
+  gap: 1.25rem;
+  padding-top: clamp(1.5rem, 4vh, 2.5rem);
+}
+
+.entry {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.input {
+  flex: 1 1 20rem;
+  padding: 1rem 1.15rem;
+  background: var(--ink-2);
+  border: 1px solid color-mix(in srgb, var(--figure) 14%, transparent);
+  border-radius: 4px;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  transition: border-color var(--charge);
+}
+
+.input::placeholder {
+  color: color-mix(in srgb, var(--figure) 34%, transparent);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.row {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--figure) 14%, transparent);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--figure) 62%, transparent);
+  transition: color var(--charge), border-color var(--charge);
+}
+
+.pill:hover {
+  color: var(--figure);
+  border-color: color-mix(in srgb, var(--figure) 30%, transparent);
+}
+
+.pillOn {
+  color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pillNote {
+  font-size: 0.6875rem;
+  opacity: 0.62;
+}
+
+/* --- buttons -------------------------------------------------------- */
+
+.primary,
+.ghost {
+  padding: 0.85rem 1.5rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background var(--charge), color var(--charge), border-color var(--charge);
+}
+
+.primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--gold-hot);
+  border-color: var(--gold-hot);
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--figure) 24%, transparent);
+  color: var(--figure);
+}
+
+.ghost:hover:not(:disabled) {
+  border-color: var(--figure);
+}
+
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.4;
+  cursor: wait;
+}
+
+/* --- the screen ----------------------------------------------------- */
+
+.screen {
+  border: 1px solid color-mix(in srgb, var(--figure) 12%, transparent);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #000;
+  /* The one lit rectangle in a dark room. */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 12%, transparent),
+    0 40px 120px -40px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.status {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.error {
+  padding: 0.9rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+  border-radius: 4px;
+  color: var(--red);
+  font-size: 0.875rem;
+}
+
+/* --- ballots -------------------------------------------------------- */
+
+.ballots {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+
+.ballot {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.25rem;
+  background: var(--ink-2);
+  border: 1px solid color-mix(in srgb, var(--figure) 12%, transparent);
+  border-radius: 4px;
+}
+
+.ballotHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: var(--rule) solid color-mix(in srgb, var(--figure) 12%, transparent);
+}
+
+.stampPass,
+.stampFail {
+  font-family: var(--font-award);
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  /* Rotated like a stamp pressed onto a page, not a status chip. */
+  rotate: -4deg;
+}
+
+.stampPass {
+  color: var(--gold);
+}
+
+.stampFail {
+  color: color-mix(in srgb, var(--red) 82%, transparent);
+}
+
+.metrics {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--figure) 58%, transparent);
+}
+
+.metric dt::after {
+  content: '';
+}
+
+.metric dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricBad {
+  color: var(--red);
+}
+
+.notes {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--figure) 10%, transparent);
+}
+
+.notes li {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--figure) 68%, transparent);
+  padding-left: 0.9rem;
+  position: relative;
+}
+
+.notes li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}

@@ -1,0 +1,70 @@
+.hero {
+  display: grid;
+  justify-items: center;
+  gap: clamp(1.25rem, 3vh, 2rem);
+  padding: clamp(7rem, 18vh, 12rem) var(--gutter) clamp(3rem, 8vh, 5rem);
+  text-align: center;
+}
+
+.slugTop {
+  margin: 0;
+}
+
+.wordmark {
+  display: flex;
+  /* Negative tracking pulls the Didone into a single mass rather than six letters
+     standing apart. The per-letter wrappers reintroduce the gaps the fall needs. */
+  gap: clamp(0.1rem, 0.6vw, 0.5rem);
+  /* The mark is the largest thing on the site by a wide margin — scale contrast is the
+     design, so nothing else is allowed near this size. */
+  font-size: clamp(4.5rem, 19vw, 17rem);
+  line-height: 0.86;
+}
+
+.letterWrap {
+  position: relative;
+  display: inline-block;
+  /* The fall starts above the frame; without this the letters are visible before the
+     timeline has set their start state on first paint. */
+  overflow: visible;
+}
+
+.letter {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+/* Molten gold running off the baseline. A gradient that fades to nothing, scaled from
+   the top, so it reads as liquid leaving the letter rather than as a bar appearing. */
+.drip {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  translate: -50% 0;
+  width: 0.055em;
+  height: 0.42em;
+  transform-origin: 50% 0%;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(
+    to bottom,
+    var(--gold) 0%,
+    var(--gold-deep) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.tagline {
+  max-width: 34ch;
+  font-size: clamp(0.875rem, 1.4vw, 1.0625rem);
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--figure) 62%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drip {
+    display: none;
+  }
+}
