@@ -7,7 +7,7 @@ import styles from '../page.module.css';
 
 const CREDITS = [
   { role: 'Directed by', name: 'Gemini 3.1 Flash Lite', note: 'shot kinds, tone order, every line on screen' },
-  { role: 'Cut in', name: 'Your browser', note: '@remotion/web-renderer — no render server exists' },
+  { role: 'Cut in', name: 'Your browser', note: '@remotion/web-renderer, no render server exists' },
   { role: 'Judged by', name: 'A measured gate', note: 'luminance, coverage, cut visibility, motion, freeze' },
   { role: 'Written from', name: 'Your commit log', note: 'real subjects, real source, never paraphrased' },
 ];
@@ -16,7 +16,7 @@ export default function About() {
   return (
     <main className={styles.page}>
       <header className={styles.pageHead}>
-        <p className="slug">Scene 04 — About</p>
+        <p className="slug">Scene 04 / About</p>
         <h1 className={`display ${styles.pageTitle}`}>Production notes</h1>
       </header>
 
@@ -31,7 +31,7 @@ export default function About() {
         </p>
         <p>
           A sizzle reel is the short cut that plays when a nominee is announced. This makes
-          one for a repo, out of what the repo actually contains — the commit subjects
+          one for a repo, out of what the repo actually contains: the commit subjects
           somebody typed at midnight, the source they wrote, the languages they reached for.
           Nothing invented, because invented detail is exactly what makes generated work
           smell generated.
@@ -40,7 +40,7 @@ export default function About() {
         <h2 className={styles.h2}>The AI directs, it does not decorate</h2>
         <p>
           The model chooses which shots the film is made of, which ground each stands on,
-          and what goes on screen. It does not choose timing, camera travel or easing —
+          and what goes on screen. It does not choose timing, camera travel or easing.
           those come from constants measured against real reference films. A model having
           an off day can write a weak line; it cannot break the motion.
         </p>
@@ -54,7 +54,7 @@ export default function About() {
         <h2 className={styles.h2}>It renders on your machine</h2>
         <p>
           There is no render server and no queue. The video is encoded in your browser via
-          WebCodecs, which is why the runtime setting is free to offer — a longer render
+          WebCodecs, which is why the runtime setting is free to offer. A longer render
           costs you seconds on your own GPU and costs this site nothing at all. It also
           means it scales to any number of people, because every visitor brings a GPU.
         </p>
@@ -77,7 +77,7 @@ export default function About() {
 
       <p className={styles.footnote}>
         Built by Ziyaad Khursheed for the Pixel Forge AI Hackathon, 2026. Open source under
-        MIT — the measurements, the failures and the notes explaining both are all in the
+        MIT. The measurements, the failures and the notes explaining both are all in the
         repository.
       </p>
     </main>

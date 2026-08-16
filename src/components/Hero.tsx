@@ -101,7 +101,7 @@ export function Hero({ children }: { children?: React.ReactNode }) {
 
   return (
     <header className={styles.hero} ref={root}>
-      <p className={`index ${styles.corner}`}>01 — THE MARK</p>
+      <p className={`index ${styles.corner}`}>sizzle</p>
 
       <h1 className={styles.wordmark} aria-label="sizzle">
         <span className={styles.word} style={{ aspectRatio: String(aspect) }}>

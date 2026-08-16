@@ -154,7 +154,7 @@ export function Director() {
   return (
     <section className={styles.director}>
       <div className={styles.sceneHead}>
-        <p className="slug">Scene 02 — The cut</p>
+        <p className="slug">Scene 02 / The cut</p>
         <h2 className={`display ${styles.sceneTitle}`}>Your commit log is the script.</h2>
       </div>
 

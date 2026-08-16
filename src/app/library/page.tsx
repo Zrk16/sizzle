@@ -35,7 +35,7 @@ export default function Library() {
   return (
     <main className={styles.page}>
       <header className={styles.pageHead}>
-        <p className="slug">Scene 02 — Library</p>
+        <p className="slug">Scene 02 / Library</p>
         <h1 className={`display ${styles.pageTitle}`}>Previously screened</h1>
         <p className={styles.lede}>
           Every reel is cut from a repo&rsquo;s own commits and its own source. No two

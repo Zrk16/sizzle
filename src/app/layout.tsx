@@ -25,7 +25,7 @@ const display = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: 'sizzle — the reel your repo deserves',
+  title: 'sizzle',
   description:
     'Paste a GitHub repo. An AI directs a short launch video from your real commits and real code, then renders it in your browser.',
 };

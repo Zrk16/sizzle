@@ -22,9 +22,9 @@ const DEFAULTS: Prefs = { aspect: '16:9', effort: 'balanced', reducedMotion: fal
 const STORAGE_KEY = 'sizzle:prefs';
 
 const ASPECTS: { id: Prefs['aspect']; label: string }[] = [
-  { id: '16:9', label: '16:9 — landscape' },
-  { id: '9:16', label: '9:16 — vertical' },
-  { id: '1:1', label: '1:1 — square' },
+  { id: '16:9', label: '16:9 landscape' },
+  { id: '9:16', label: '9:16 vertical' },
+  { id: '1:1', label: '1:1 square' },
 ];
 
 const EFFORTS: { id: Prefs['effort']; label: string }[] = [
@@ -62,7 +62,7 @@ export default function Settings() {
   return (
     <main className={styles.page}>
       <header className={styles.pageHead}>
-        <p className="slug">Scene 03 — Settings</p>
+        <p className="slug">Scene 03 / Settings</p>
         <h1 className={`display ${styles.pageTitle}`}>House rules</h1>
         <p className={styles.lede}>
           Stored in this browser only. There are no accounts, nothing is sent anywhere, and
@@ -77,7 +77,7 @@ export default function Settings() {
             {saved && <span className={styles.saved}>Saved</span>}
           </div>
           <p className={styles.fieldHint}>
-            One spec renders at any shape — the film is authored against a fixed logical
+            One spec renders at any shape. The film is authored against a fixed logical
             canvas and scaled to whatever frame you pick.
           </p>
           <div className={styles.choices}>
@@ -96,7 +96,7 @@ export default function Settings() {
         <div className={styles.field}>
           <p className="slug">Default runtime</p>
           <p className={styles.fieldHint}>
-            Longer holds mean a longer render — and the render happens on your machine, not
+            Longer holds mean a longer render, and the render happens on your machine, not
             ours, which is why the choice is free to offer.
           </p>
           <div className={styles.choices}>
