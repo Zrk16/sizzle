@@ -130,6 +130,9 @@ export function Director() {
           id: 'sizzle',
         },
         inputProps: { spec },
+        // The score is generated from this spec, so it ships with the download rather
+        // than being something the viewer has to add afterwards.
+        audioCodec: 'aac',
         signal: abort.current.signal,
       });
       const url = URL.createObjectURL(await getBlob());

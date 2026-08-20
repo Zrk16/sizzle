@@ -145,6 +145,9 @@ export async function critique(
       id: 'sizzle-proxy',
     },
     inputProps: { spec },
+    // The proxy exists only to be measured for luminance and motion. Encoding audio for
+    // it would cost time and change nothing any of the metrics look at.
+    audioCodec: null,
   });
 
   const proxyUrl = URL.createObjectURL(await getBlob());

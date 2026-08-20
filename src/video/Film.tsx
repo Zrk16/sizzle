@@ -1,8 +1,9 @@
 import React from 'react';
-import { AbsoluteFill, Sequence } from 'remotion';
+import { AbsoluteFill, Audio, Sequence } from 'remotion';
 import type { RenderSpec } from '@/lib/spec';
 import { ShotFrame } from './shots';
 import { LOGICAL_HEIGHT } from './theme';
+import { buildScore } from './audio';
 
 /**
  * Assembles a RenderSpec into the finished film.
@@ -26,8 +27,16 @@ export const Film: React.FC<{ spec: RenderSpec }> = ({ spec }) => {
   const scale = spec.height / LOGICAL_HEIGHT;
   const logicalWidth = spec.width / scale;
 
+  /**
+   * The score is generated FROM this spec, so its hits sit exactly on the shot boundaries.
+   * Derived at render time rather than fetched: every film has different cut points, so
+   * there is no fixed track that could line up with all of them.
+   */
+  const score = React.useMemo(() => buildScore(spec), [spec]);
+
   return (
     <AbsoluteFill style={{ background: '#0A0A0C', overflow: 'hidden' }}>
+      <Audio src={score.dataUri} />
       <div
         style={{
           position: 'absolute',
