@@ -257,6 +257,8 @@ export type RenderShot = Shot & {
   startFrame: number;
   durationInFrames: number;
   cameraDy: number;
+  /** 'push' commits to a real move; 'drift' is the long linear glide that keeps frames alive. */
+  camera: 'push' | 'drift';
   payload?: ShotPayload;
 };
 
@@ -330,6 +332,12 @@ export function toRenderSpec(
   const [width, height] =
     aspect === '9:16' ? [1080, 1920] : aspect === '1:1' ? [1080, 1080] : [1920, 1080];
 
+  // Which shot gets the film's one committed camera move. `stat` earns it — it is the only
+  // kind carrying a single hard number — otherwise the shot just before the lockup, which
+  // is the last thing said before the name lands.
+  const statAt = ai.shots.findIndex((s) => s.kind === 'stat');
+  const pushAt = statAt >= 0 ? statAt : Math.max(0, ai.shots.length - 2);
+
   let cursor = 0;
   const shots: RenderShot[] = ai.shots.map((shot, i) => {
     // A wall of one commit is not a wall; a code shot showing a file path is not code.
@@ -383,7 +391,23 @@ export function toRenderSpec(
         Math.max(MOTION.cameraTravel, durationInFrames * MOTION.minPxPerFrame)
       : 0;
 
-    return { ...shot, startFrame, durationInFrames, cameraDy, payload };
+    /**
+     * One move per film COMMITS. The rest drift.
+     *
+     * Reference practice is blunt about this: a move to 1.05-1.2x with a symmetric ease is
+     * the amateur tell — a camera that wobbles instead of deciding — and real push-ins land
+     * at 1.7x or beyond. Every shot here was doing exactly the banned thing, a uniform 1.1x
+     * creep, because that number was chosen to satisfy a stillness metric rather than to
+     * mean anything.
+     *
+     * The drift stays (it is what keeps the frame from freezing, and a long LINEAR drift is
+     * a legitimate move), but the film's loudest beat now gets a real push. `stat` is that
+     * beat when one exists — it is the only shot kind carrying a single hard number — and
+     * the shot before the lockup otherwise, which is the last thing said before the name.
+     */
+    const camera: 'push' | 'drift' = i === pushAt ? 'push' : 'drift';
+
+    return { ...shot, startFrame, durationInFrames, cameraDy, camera, payload };
   });
 
   return {

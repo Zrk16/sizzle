@@ -376,6 +376,42 @@ const REGISTRY = {
   lockup: Lockup,
 } as const;
 
+/**
+ * Resting 3D tilt — the single loudest thing separating this from professional work.
+ *
+ * Measured across 24 hand-built reference templates, 145 of 505 visual layers rest tilted
+ * over 2 degrees, clustering around 45. A flat face-on layout is a choice there, not the
+ * default; here it had been the only option, and a flat frame is what "made by a program"
+ * looks like.
+ *
+ * Two departures from that 45-degree figure, both deliberate:
+ *
+ * Only MEDIA shots lean. In the reference set the tilted layers are screenshots, cards and
+ * shapes — headline text is repeatedly left flat, and for good reason: a sentence rotated
+ * far enough to read as 3D stops being readable, and every one of those films puts exactly
+ * one text idea on screen at a time precisely so it CAN be read. Type stays square here.
+ *
+ * The angles are smaller than 45. Those films lean hard because a real camera dollies past
+ * the layer, so perspective changes across the move and sells the depth. This camera only
+ * travels ~112px, so the same angle would read as a static skew — a still photograph of a
+ * tilted thing rather than an object in space. These are set to the largest lean that still
+ * reads as depth under our much smaller move.
+ *
+ * Rendered, looked at, and cut back. The first version leaned `code` and `commitwall` too,
+ * and both were worse: a tilted block of source reads as a slanted photocopy, not an object
+ * in space, and it loses contrast as the far edge recedes. The reference rule turned out to
+ * be load-bearing exactly as written — the layers that lean are CARDS, PANELS and IMAGES,
+ * things with an edge and a surface. Raw text has neither, so there is nothing for the eye
+ * to read the perspective against.
+ *
+ * What survives is the two shots whose content IS a surface: the bento cards, and the
+ * repo's own artwork.
+ */
+const TILT: Partial<Record<RenderShot['kind'], string>> = {
+  artwork: 'rotateX(12deg) rotateY(-8deg)',
+  bento: 'rotateX(19deg) rotateY(-6deg)',
+};
+
 export const ShotFrame: React.FC<{
   shot: RenderShot;
   accent: string;
@@ -409,7 +445,7 @@ export const ShotFrame: React.FC<{
    * the earlier per-shot drift did, because nothing moves relative to anything else.
    */
   const pushProgress = shot.durationInFrames > 0 ? local / shot.durationInFrames : 0;
-  const push = 1 + pushProgress * 0.1;
+  const push = 1 + pushProgress * (shot.camera === 'push' ? 0.55 : 0.1);
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: t.bg, overflow: 'hidden' }}>
@@ -422,6 +458,10 @@ export const ShotFrame: React.FC<{
           inset: '-12% 0',
           transform: `translateY(${dy}px) scale(${push})`,
           transformOrigin: '50% 50%',
+          // The plane the tilt is read against. Without a perspective ancestor a rotateX is
+          // an affine squash, not a lean — the far edge has to actually get smaller.
+          perspective: TILT[shot.kind] ? '1900px' : undefined,
+          perspectiveOrigin: '50% 42%',
         }}
       >
         <Ground
@@ -431,7 +471,14 @@ export const ShotFrame: React.FC<{
           local={local}
           duration={shot.durationInFrames}
         />
-        <div style={{ position: 'absolute', inset: 0 }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            transform: TILT[shot.kind] ?? undefined,
+            transformOrigin: '50% 50%',
+          }}
+        >
           <Component
             shot={shot}
             accent={accent}
