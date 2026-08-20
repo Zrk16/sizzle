@@ -360,18 +360,6 @@ const ShotChrome: React.FC<{
         {String(index + 1).padStart(2, '0')}
         <span style={{ color: colour, opacity: 0.45 }}> / {String(total).padStart(2, '0')}</span>
       </div>
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 64,
-          left: GUTTER,
-          ...mono,
-          color: colour,
-          opacity: e.opacity * 0.5,
-        }}
-      >
-        {label}
-      </div>
     </>
   );
 };

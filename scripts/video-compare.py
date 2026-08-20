@@ -55,7 +55,7 @@ for r in refs:
         if s: got.append(s)
 
 print()
-ours = stats('OURS', 'out/film11.mp4')
+ours = stats('OURS', 'out/film15.mp4')
 print()
 print('--- reference range vs ours ---')
 for k, unit in [('shot_len','s'),('lum',''),('dark5',''),('motion',''),('still','%')]:

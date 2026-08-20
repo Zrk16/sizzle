@@ -15,6 +15,7 @@ const Blur: React.FC<{ enabled: boolean; children: React.ReactNode }> = ({ enabl
     <>{children}</>
   );
 import { Score } from './Score';
+import { Continuity } from './Continuity';
 
 /**
  * Assembles a RenderSpec into the finished film.
@@ -64,6 +65,24 @@ export const Film: React.FC<{ spec: RenderSpec; motionBlur?: boolean }> = ({
           height: LOGICAL_HEIGHT,
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
+          /*
+           * THE GRADE. One filter over the finished frame, which is the last thing a real
+           * pipeline does and the first thing this one never had.
+           *
+           * It sits on the element that CONTAINS the film, not on an overlay above it: a
+           * CSS filter applies to its own subtree, so an empty div with a filter on it
+           * grades nothing at all. That was the first attempt.
+           *
+           * `contrast` is the operative term — it pivots around mid-grey, pushing shadows
+           * down and highlights up at once. The film measured darkest-5% of 13 against a
+           * reference range of 0-4: nothing in frame was ever properly black, and real
+           * blacks are the strongest expensive-looking tell in that set. A little
+           * saturation stops the added contrast reading as grey.
+           *
+           * CSS filters were measured as surviving the browser renderer, unlike
+           * mix-blend-mode and backdrop-filter which it drops silently.
+           */
+          filter: 'contrast(1.09) saturate(1.06) brightness(0.985)',
         }}
       >
         <Blur enabled={motionBlur}>
@@ -85,7 +104,11 @@ export const Film: React.FC<{ spec: RenderSpec; motionBlur?: boolean }> = ({
           </Sequence>
         ))}
         </Blur>
+
+        {/* Outside the shot system, so it survives every cut. */}
+        <Continuity spec={spec} frameWidth={logicalWidth} />
       </div>
+
     </AbsoluteFill>
   );
 };
