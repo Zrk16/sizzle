@@ -18,7 +18,7 @@ for (const line of readFileSync(new URL('../.env.local', import.meta.url), 'utf8
 
 const target = process.argv[2] ?? 'darkroomengineering/lenis';
 const facts = await analyzeRepo(target);
-const { spec } = await directVideo(facts);
+const { spec, critique } = await directVideo(facts);
 const render = toRenderSpec(spec, facts, 'balanced');
 
 writeFileSync(new URL('./sample-spec.json', import.meta.url), JSON.stringify(render, null, 2));
@@ -26,4 +26,11 @@ writeFileSync(new URL('./sample-spec.json', import.meta.url), JSON.stringify(ren
 console.log(`hook   "${spec.hook}"   accent ${render.accent}`);
 console.log(`shots  ${render.shots.map((s) => `${s.tone}/${s.kind}`).join('  ')}`);
 console.log(`frames ${render.durationInFrames} at ${render.width}x${render.height}`);
+if (critique) {
+  console.log('');
+  console.log(`EDITOR: ${critique.revised ? 'sent back for revision' : 'passed'}`);
+  critique.problems.forEach((problem) => console.log(`  - ${problem}`));
+  console.log(`  stranger test: ${critique.strangerTest}`);
+}
+console.log('');
 console.log('wrote scripts/sample-spec.json');

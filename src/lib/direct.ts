@@ -1,5 +1,6 @@
 import { aiSpecSchema, geminiResponseSchema, type AiSpec } from './spec';
 import type { RepoFacts } from './analyze';
+import { critiqueWriting } from './critic';
 
 /**
  * The AI director.
@@ -22,13 +23,17 @@ const ENDPOINT = (model: string) =>
 
 export class DirectError extends Error {}
 
+/** Newline as a value. Building prompts with escapes inside nested template strings kept
+ *  producing literal line breaks in the source rather than in the output. */
+const NL = String.fromCharCode(10);
+
 /** Only the facts worth putting on screen. Feeding the whole API blob invites the model
  *  to reach for whatever is numerically largest, which is how you get slop. */
 function factSheet(f: RepoFacts): string {
   const lines: string[] = [
     `name: ${f.repo}`,
     f.description ? `description: ${f.description}` : null,
-    f.readmeFirstParagraph ? `readme opens with: ${f.readmeFirstParagraph}` : null,
+    f.readmeIntro ? `readme says: ${f.readmeIntro}` : f.readmeFirstParagraph ? `readme opens with: ${f.readmeFirstParagraph}` : null,
     `primary language: ${f.languages[0]?.language ?? 'unknown'} (${f.languages[0]?.share ?? 0}% of the code)`,
     f.languages.length > 1 ? `other languages: ${f.languages.slice(1).map((l) => l.language).join(', ')}` : null,
     f.commitCount !== null ? `commits: ${f.commitCount}` : null,
@@ -38,6 +43,8 @@ function factSheet(f: RepoFacts): string {
     f.topics.length ? `topics: ${f.topics.join(', ')}` : null,
     `first commit: ${f.createdAt}, last push: ${f.pushedAt} (${f.ageDays} days old)`,
     f.license ? `license: ${f.license}` : null,
+    f.dependencies.length ? `built on: ${f.dependencies.join(', ')}` : null,
+    f.homepage ? `homepage: ${f.homepage}` : null,
   ].filter(Boolean) as string[];
 
   if (f.recentCommits.length) {
@@ -76,19 +83,52 @@ Available shot kinds:
                developer who has never heard of it. Not a slogan, not a fragment, not the
                project name. This is the only shot that is allowed to be a sentence, and
                without it the film says nothing.
-  bigtype    - oversized words, the display statement
-  blowout    - a single word wider than the frame, for one hard beat
-  typeon     - text revealed per character with a caret, good for a command or a claim
+  bigtype    - a short display statement, a few words at most, set very large
   commitwall - this developer's real commit subjects, stacked
   code       - real source from the repo
-  stat       - one number. Punctuation only, at most once.
-  stack      - cards dropping in, good for a list of three things
+  stat       - one number, EXACTLY as given in the facts. Punctuation only, at most once,
+               and never the opening or the payoff.
   lockup     - project name + one line. Always last.
 
 For 'code' and 'commitwall', the real source and the real commit list are inserted for you.
 Your 'text' for those two is only a short LABEL above them — do not retype code, do not
 copy a file path, and do not quote a single commit. Label them like a director would:
 "the actual code", "1072 commits later", "what shipped this month".`;
+
+/**
+ * Two worked examples of scripts that would pass review.
+ *
+ * Rules alone were not enough: the drafts obeyed every constraint and were still flat,
+ * because "do not write marketing copy" does not show anyone what good looks like. These
+ * are for projects unrelated to anything a user will paste, and the do-not-reuse
+ * instruction is explicit — the model has already been caught returning an example hex
+ * colour verbatim as its own choice.
+ */
+const EXAMPLES = `Two examples of the standard expected. They are for OTHER projects. Do not
+reuse their words, their structure, or their accent colours.
+
+EXAMPLE A — a date library
+  hook:   "Why is date maths still this hard?"
+  claim:  "date-fns gives you 200 small functions for working with dates, and you import
+           only the ones you use."
+  code:   label "the whole implementation"
+  commitwall: label "shipped this month"
+  stat:   "36847" caption "projects depend on it"
+  lockup: "date-fns" caption "one function at a time"
+  closer: "Import what you need."
+
+EXAMPLE B — a terminal multiplexer
+  hook:   "What happens to your work when SSH drops?"
+  claim:  "zellij keeps your terminal sessions alive on the server, so a dropped connection
+           costs you nothing."
+  bigtype: "It was still running."
+  code:   label "the session layer"
+  lockup: "zellij" caption "your terminal, persistent"
+  closer: "Reconnect. Everything's there."
+
+Notice what both do: the hook asks something a developer has actually felt, the claim is a
+plain sentence with no adjectives in it, and the closer is a line worth ending on rather
+than a slogan.`;
 
 /**
  * Anti-stock variety. Without this every repo produced the identical skeleton —
@@ -102,7 +142,7 @@ const ANGLES = [
   'Open on the scale of the work — the commits, the years, the contributors — then reveal what it is.',
   'Open on the code itself. Let the source be the first thing on screen.',
   'Structure it as a question, a wrong answer, then the right answer.',
-  'Open loud with a blowout on one single word, then get quiet and specific.',
+  'Open loud and blunt on a few words, then get quiet and specific.',
   'Tell it as a before and after: what building this was like without the project, then with it.',
   'Lead with the most recent work — what this developer shipped lately — then widen out.',
 ];
@@ -134,7 +174,13 @@ async function callGemini(model: string, prompt: string): Promise<unknown> {
   return JSON.parse(text);
 }
 
-export type DirectResult = { spec: AiSpec; model: string; attempts: number };
+export type DirectResult = {
+  spec: AiSpec;
+  model: string;
+  attempts: number;
+  /** What the writing critic said about the draft, when it ran. */
+  critique?: { problems: string[]; strangerTest: string; revised: boolean };
+};
 
 export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
   const angle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
@@ -162,7 +208,64 @@ export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
       try {
         const raw = await callGemini(model, prompt);
         const parsed = aiSpecSchema.safeParse(raw);
-        if (parsed.success) return { spec: parsed.data, model, attempts };
+        if (parsed.success) {
+          /**
+           * Zod proved the shape is legal. It cannot tell whether the writing is any good,
+           * and a legal script can still repeat its own hook, paraphrase the README, round
+           * a real number, and end on a slogan — all of which shipped.
+           *
+           * So one editorial pass: a critic reads the draft as COPY, and if it objects the
+           * draft goes back with those notes. Draft, then cut. One revision only — a second
+           * opinion is worth a round trip, an argument is not.
+           */
+          const critique = await critiqueWriting(facts, parsed.data);
+          if (!critique || critique.verdict === 'pass' || !critique.problems.length) {
+            return {
+              spec: parsed.data,
+              model,
+              attempts,
+              critique: critique
+                ? { problems: [], strangerTest: critique.strangerTest, revised: false }
+                : undefined,
+            };
+          }
+
+          attempts++;
+          const notes = critique.problems.map((x) => `- ${x}`).join(NL);
+          try {
+            const second = await callGemini(
+              model,
+              `${basePrompt}${NL}${NL}You wrote this draft:${NL}${JSON.stringify(parsed.data, null, 1)}${NL}${NL}` +
+                `An editor reviewed it and raised these problems. Rewrite to fix EVERY one. ` +
+                `Keep what was working; change only what the notes call out.${NL}${notes}`
+            );
+            const revised = aiSpecSchema.safeParse(second);
+            if (revised.success) {
+              return {
+                spec: revised.data,
+                model,
+                attempts,
+                critique: {
+                  problems: critique.problems,
+                  strangerTest: critique.strangerTest,
+                  revised: true,
+                },
+              };
+            }
+          } catch {
+            // Revision failed; the draft was already valid, so ship it rather than nothing.
+          }
+          return {
+            spec: parsed.data,
+            model,
+            attempts,
+            critique: {
+              problems: critique.problems,
+              strangerTest: critique.strangerTest,
+              revised: false,
+            },
+          };
+        }
         problems.length = 0;
         problems.push(...parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
         lastError = problems.join('; ');

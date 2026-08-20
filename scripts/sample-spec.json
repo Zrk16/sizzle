@@ -1,49 +1,36 @@
 {
-  "hook": "Want smoother scrolling experiences?",
-  "accent": "#2E6F5E",
-  "closer": "Smooth scroll, perfected.",
+  "hook": "How to make scrolling feel better?",
+  "accent": "#E8552D",
+  "closer": "Drive any scroll.",
   "repo": "lenis",
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "durationInFrames": 545,
+  "durationInFrames": 575,
   "shots": [
     {
-      "kind": "commitwall",
+      "kind": "bigtype",
       "tone": "ink",
-      "text": "recent work",
+      "text": "Janky scroll?",
       "startFrame": 0,
-      "durationInFrames": 106,
-      "cameraDy": 112,
-      "payload": {
-        "type": "commits",
-        "subjects": [
-          "v1.3.26",
-          "feat(core): respect prefers-reduced-motion by default (#534) (#537)",
-          "Update sponsor logos in README.md",
-          "Update sponsors section in README.md",
-          "v1.3.25",
-          "fix(core): resolve anchor targets with CSS-special-char ids (#520) (#526",
-          "v1.3.24",
-          "fix(core): don't scroll while dragging iOS text-selection handles (#524)"
-        ]
-      }
+      "durationInFrames": 53,
+      "cameraDy": 0
     },
     {
       "kind": "claim",
       "tone": "paper",
-      "text": "Lenis provides smooth scrolling as it should be, respecting user preferences.",
-      "startFrame": 106,
+      "text": "Lenis wraps native scroll for smooth vertical, horizontal, and nested scrolling.",
+      "startFrame": 53,
       "durationInFrames": 157,
       "cameraDy": 0
     },
     {
       "kind": "code",
-      "tone": "flood",
-      "text": "Animate class",
-      "startFrame": 263,
-      "durationInFrames": 106,
-      "cameraDy": 112,
+      "tone": "ink",
+      "text": "Core animation logic",
+      "startFrame": 210,
+      "durationInFrames": 117,
+      "cameraDy": 117,
       "payload": {
         "type": "code",
         "path": "packages/core/src/animate.ts",
@@ -66,26 +53,39 @@
       }
     },
     {
-      "kind": "bigtype",
-      "tone": "ink",
-      "text": "performance",
-      "startFrame": 369,
-      "durationInFrames": 45,
-      "cameraDy": 0
+      "kind": "commitwall",
+      "tone": "paper",
+      "text": "Respects reduced motion",
+      "startFrame": 327,
+      "durationInFrames": 117,
+      "cameraDy": -117,
+      "payload": {
+        "type": "commits",
+        "subjects": [
+          "v1.3.26",
+          "feat(core): respect prefers-reduced-motion by default (#534) (#537)",
+          "Update sponsor logos in README.md",
+          "Update sponsors section in README.md",
+          "v1.3.25",
+          "fix(core): resolve anchor targets with CSS-special-char ids (#520) (#526",
+          "v1.3.24",
+          "fix(core): don't scroll while dragging iOS text-selection handles (#524)"
+        ]
+      }
     },
     {
       "kind": "stat",
-      "tone": "paper",
+      "tone": "flood",
       "text": "15502 stars",
-      "startFrame": 414,
+      "startFrame": 444,
       "durationInFrames": 53,
       "cameraDy": 0
     },
     {
       "kind": "lockup",
-      "tone": "flood",
-      "text": "lenis",
-      "startFrame": 467,
+      "tone": "ink",
+      "text": "Lenis",
+      "startFrame": 497,
       "durationInFrames": 78,
       "cameraDy": 0
     }

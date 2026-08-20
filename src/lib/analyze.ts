@@ -30,6 +30,10 @@ export type RepoFacts = {
   recentCommits: string[];
   contributorCount: number | null;
   readmeFirstParagraph: string | null;
+  /** Several paragraphs of prose, so the director can actually learn what this does. */
+  readmeIntro: string | null;
+  /** What it is built on. Often the clearest signal of what a project actually is. */
+  dependencies: string[];
   codeSample: { path: string; lines: string[] } | null;
 };
 
@@ -96,6 +100,41 @@ async function countViaLinkHeader(path: string): Promise<number | null> {
   return page ? Number(page) : null;
 }
 
+/**
+ * Several paragraphs of README prose, not one line.
+ *
+ * The director was given a single sentence and asked to explain what a project does. It
+ * could not, so it paraphrased the tagline and called that the explanation. A README's
+ * opening usually contains the actual "what is this and why" — it is just buried under
+ * badges, a logo and a table of contents.
+ */
+const LF = String.fromCharCode(10);
+
+function readmeIntro(markdown: string, limit = 900): string | null {
+  const out: string[] = [];
+  let used = 0;
+  for (const raw of markdown.split(LF)) {
+    const line = raw.trim();
+    if (!line) continue;
+    // Skip the furniture: headings, badges, images, HTML blocks, tables, lists of links.
+    if (/^#{1,6}\s/.test(line)) continue;
+    if (line.startsWith('![') || line.startsWith('[!') || line.startsWith('<')) continue;
+    if (line.startsWith('---') || line.startsWith('|') || line.startsWith('```')) continue;
+    if (/^[-*]\s*\[/.test(line)) continue; // bullet that is just a link
+
+    const clean = line
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/[*_`>]/g, '')
+      .trim();
+    if (clean.length < 25) continue;
+
+    out.push(clean);
+    used += clean.length;
+    if (used >= limit) break;
+  }
+  return out.length ? out.join(' ').slice(0, limit) : null;
+}
+
 function firstParagraph(markdown: string): string | null {
   for (const raw of markdown.split('\n')) {
     const line = raw.trim();
@@ -114,6 +153,52 @@ function firstParagraph(markdown: string): string | null {
 
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|py|go|rs|rb|java|kt|swift|c|cpp|h|cs|php|ex|zig)$/;
 const SKIP_PATH = /(^|\/)(node_modules|dist|build|vendor|\.next|test|tests|__tests__|spec)(\/|$)/;
+
+/**
+ * Direct dependencies, from whichever manifest the project uses. What something is built
+ * on is frequently the clearest signal of what it is — a repo depending on `three` and
+ * `gsap` is a different animal from one depending on `express` and `pg`, whatever its
+ * README says.
+ */
+async function readDependencies(owner: string, repo: string, branch: string): Promise<string[]> {
+  const tryFile = async (path: string): Promise<string | null> => {
+    const r = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`);
+    return r.ok ? r.text() : null;
+  };
+
+  const pkg = await tryFile('package.json');
+  if (pkg) {
+    try {
+      const parsed = JSON.parse(pkg) as { dependencies?: Record<string, string> };
+      return Object.keys(parsed.dependencies ?? {}).slice(0, 14);
+    } catch {
+      // A malformed manifest is not worth failing the whole analysis over.
+    }
+  }
+
+  const py = (await tryFile('requirements.txt')) ?? (await tryFile('pyproject.toml'));
+  if (py) {
+    return py
+      .split(LF)
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#') && !l.startsWith('['))
+      .map((l) => l.split(/[=<>~!\[\s]/)[0].replace(/^"|"$/g, '').trim())
+      .filter((l) => l.length > 1 && l.length < 40)
+      .slice(0, 14);
+  }
+
+  const cargo = await tryFile('Cargo.toml');
+  if (cargo) {
+    const after = cargo.split('[dependencies]')[1] ?? '';
+    return after
+      .split(LF)
+      .map((l) => l.split('=')[0].trim())
+      .filter((l) => /^[a-z0-9_-]{2,}$/i.test(l))
+      .slice(0, 14);
+  }
+
+  return [];
+}
 
 /** One real source file, for the code shot. Generic stats are punctuation; code is specific. */
 async function pickCodeSample(
@@ -172,13 +257,14 @@ export async function analyzeRepo(input: string): Promise<RepoFacts> {
 
   if (!meta) throw new AnalyzeError(`No public repo at github.com/${owner}/${repo}`, 404);
 
-  const [langs, commits, commitCount, contributorCount, readme, codeSample] = await Promise.all([
+  const [langs, commits, commitCount, contributorCount, readme, codeSample, deps] = await Promise.all([
     gh<Record<string, number>>(`/repos/${owner}/${repo}/languages`),
     gh<{ commit: { message: string } }[]>(`/repos/${owner}/${repo}/commits?per_page=30`),
     countViaLinkHeader(`/repos/${owner}/${repo}/commits?per_page=1`),
     countViaLinkHeader(`/repos/${owner}/${repo}/contributors?per_page=1&anon=false`),
     gh<{ content: string; encoding: string }>(`/repos/${owner}/${repo}/readme`),
     pickCodeSample(owner, repo, meta.default_branch).catch(() => null),
+    readDependencies(owner, repo, meta.default_branch).catch(() => [] as string[]),
   ]);
 
   const totalBytes = Object.values(langs ?? {}).reduce((a, b) => a + b, 0) || 1;
@@ -211,6 +297,10 @@ export async function analyzeRepo(input: string): Promise<RepoFacts> {
     readmeFirstParagraph: readme
       ? firstParagraph(Buffer.from(readme.content, 'base64').toString('utf8'))
       : null,
+    readmeIntro: readme
+      ? readmeIntro(Buffer.from(readme.content, 'base64').toString('utf8'))
+      : null,
+    dependencies: deps,
     codeSample,
   };
 }
