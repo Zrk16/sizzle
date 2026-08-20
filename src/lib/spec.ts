@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { shotFrames } from '@/video/pacing';
 
 /**
  * The contract between the model and the renderer.
@@ -16,15 +17,21 @@ import { z } from 'zod';
 
 /** Browser-safe shot kinds only. Anything needing backdrop-filter, blend modes or
  *  3D perspective is excluded — @remotion/web-renderer drops those silently. */
+/**
+ * Five kinds, down from eight.
+ *
+ * `blowout` set one word at 560px and was the single worst overflow offender; `typeon`
+ * was a gimmick that read as a terminal demo whatever the project; `stack` split its text
+ * on commas and collapsed to a single card whenever there weren't any. Most of what reads
+ * as AI is variety executed badly — a film with five deliberate kinds beats one with
+ * eight guessed ones.
+ */
 export const SHOT_KINDS = [
   'claim', // the one shot allowed a full sentence: what this project actually IS
-  'bigtype', // oversized words, may exceed the frame
-  'blowout', // one word wider than the canvas
-  'typeon', // per-character reveal with a caret
+  'bigtype', // oversized words, the display statement
   'commitwall', // the dev's real commit subjects, stacked and staggered
-  'code', // real syntax-highlighted source from the repo
-  'stat', // one number, used as punctuation and never as the hero
-  'stack', // cards dropping in with overshoot
+  'code', // real source from the repo
+  'stat', // one number, punctuation and never the hero
   'lockup', // name + line — the ending
 ] as const;
 
@@ -91,7 +98,11 @@ export const aiSpecSchema = z
       .regex(/^#[0-9a-fA-F]{6}$/, 'accent must be a 6-digit hex colour')
       .refine((hex) => !isDefaultLookingColour(hex), {
         message:
-          'that accent is a colour a computer picks, not a designer: avoid pure #00FF00 / #FF0000 style corner values, and anything near black or white. Pick something mixed, like #FF4D00 or #2E6F5E.',
+          // Deliberately NO example hex here. An earlier version suggested two, and the
+          // model returned one of them verbatim as its "choice" — the same failure as
+          // putting <angle-bracket> placeholders in a prompt. Describe the target, never
+          // hand over a value that can be copied.
+          'that accent is a colour a computer picks, not a designer. Avoid the corners of the RGB cube, anything near black or white, and any fully saturated screen colour. Choose a mixed, slightly muted hue that suits this specific project.',
       })
       .describe('One accent colour on a calm field — 2-3 colours max, never a rainbow.'),
     shots: z.array(shotSchema).min(4).max(7),
@@ -144,9 +155,12 @@ export const aiSpecSchema = z
       });
     }
 
-    // Per-kind length. A claim needs room for a sentence; a blowout is one word.
+    // Per-kind length. A claim needs room for a sentence; everything else is a beat.
+    // These are still enforced even though the renderer now auto-fits type: fitting stops
+    // a long string from overflowing, it does not stop it from shrinking to 24px and
+    // reading as a paragraph in a shot that wanted three words.
     spec.shots.forEach((shot, i) => {
-      const cap = shot.kind === 'claim' ? 96 : shot.kind === 'blowout' ? 14 : 34;
+      const cap = shot.kind === 'claim' ? 96 : 34;
       if (shot.text.length > cap) {
         ctx.addIssue({
           code: 'custom',
@@ -179,7 +193,6 @@ export type Shot = z.infer<typeof shotSchema>;
  */
 export const MOTION = {
   fps: 30,
-  shotFrames: { fast: 54, balanced: 66, cinematic: 78 },
   /** px of camera travel per shot, at the 1920-tall logical canvas */
   cameraTravel: 112,
   minPxPerFrame: 1,
@@ -230,7 +243,6 @@ export function toRenderSpec(
   effort: Effort = 'balanced',
   aspect: '16:9' | '9:16' | '1:1' = '16:9'
 ): RenderSpec {
-  const per = MOTION.shotFrames[effort];
   const [width, height] =
     aspect === '9:16' ? [1080, 1920] : aspect === '1:1' ? [1080, 1080] : [1920, 1080];
 
@@ -245,7 +257,21 @@ export function toRenderSpec(
       payload = { type: 'code', path: facts.codeSample.path, lines: facts.codeSample.lines };
     }
 
-    const durationInFrames = per;
+    /**
+     * Duration comes from the CONTENT, not a constant.
+     *
+     * Every shot used to run the same 66 frames, so the claim — the one shot whose whole
+     * job is to be read — got 2.2 seconds for a sentence that needs about five, while a
+     * two-word lockup got the same 2.2 and sat there dead. Reading time is a fact about
+     * the text; it is not a style choice.
+     */
+    const payloadLines =
+      payload?.type === 'commits'
+        ? payload.subjects.length
+        : payload?.type === 'code'
+          ? payload.lines.length
+          : 0;
+    const { frames: durationInFrames } = shotFrames(shot, MOTION.fps, effort, payloadLines);
     const startFrame = cursor;
     cursor += durationInFrames;
 
@@ -263,7 +289,7 @@ export function toRenderSpec(
      * dolly, because reading them is itself a downward move. Shots that are one held
      * statement do not move at all. Anything that does move still clears the 1px floor.
      */
-    const TRAVELS = new Set(['commitwall', 'code', 'stack']);
+    const TRAVELS = new Set(['commitwall', 'code']);
     const cameraDy = TRAVELS.has(shot.kind)
       ? (i % 2 === 0 ? 1 : -1) *
         Math.max(MOTION.cameraTravel, durationInFrames * MOTION.minPxPerFrame)

@@ -50,6 +50,7 @@ export const Film: React.FC<{ spec: RenderSpec }> = ({ spec }) => {
               index={i}
               total={spec.shots.length}
               repo={spec.repo ?? ''}
+              frameWidth={logicalWidth}
             />
           </Sequence>
         ))}
