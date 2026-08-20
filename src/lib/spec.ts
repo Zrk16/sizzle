@@ -128,6 +128,27 @@ export const aiSpecSchema = z
         ctx.addIssue({ code: 'custom', path: ['shots'], message: `"${once}" may appear at most once` });
       }
     }
+    /**
+     * At least a third of the film stands on INK.
+     *
+     * Measured against the reference set: they run mean luminance 46-121 with a darkest-5%
+     * of 0-4. This film measured 125 luminance and 14 darkest-5% — brighter than every
+     * reference and with no true black anywhere in it. Real blacks are the single
+     * strongest "expensive" tell in that set, and a film that never goes dark has no
+     * depth anchor to contrast against.
+     *
+     * Alternating tones alone does not guarantee this: paper/flood/paper/flood satisfies
+     * every existing rule and never once goes dark.
+     */
+    const inkCount = spec.shots.filter((sh) => sh.tone === 'ink').length;
+    if (inkCount < Math.ceil(spec.shots.length / 3)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['shots'],
+        message: `only ${inkCount} of ${spec.shots.length} shots stand on ink. At least a third must, or the film has no true blacks in it and reads washed out.`,
+      });
+    }
+
     if (kinds.at(-1) !== 'lockup') {
       ctx.addIssue({ code: 'custom', path: ['shots'], message: 'the last shot must be a lockup' });
     }

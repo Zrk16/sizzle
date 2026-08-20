@@ -34,7 +34,9 @@ export const TONES: Record<Tone, ToneTokens> = {
     pop: (accent) => accent,
   },
   paper: {
-    bg: '#F4F3F0',
+    // Was #F4F3F0 — near paper-white, and with several paper shots the film measured
+    // mean luminance 125 against a reference ceiling of 121. Pulled down a stop.
+    bg: '#E8E7E2',
     fg: '#0A0A0C',
     dim: 'rgba(10,10,12,0.46)',
     rule: 'rgba(10,10,12,0.12)',

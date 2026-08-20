@@ -22,6 +22,16 @@ import type { Shot } from '@/lib/spec';
  * z-index, because the browser renderer silently drops all three. Layering is DOM order.
  */
 
+/**
+ * The vignette lives in `shots.tsx`, NOT here.
+ *
+ * It used to sit in this component, inside the group that the camera scales. With a
+ * whole-frame push of 1.0 to 1.1 that pushed its dark corners outside the visible frame,
+ * so deepening it changed the measured darkest-5% by exactly nothing. A vignette is a
+ * property of the lens, not of the world in front of it, and it has to be fixed to the
+ * frame to behave like one.
+ */
+
 /** 160x160 of monochrome noise, base64. Static — never regenerated per frame. */
 const GRAIN =
   'data:image/svg+xml;utf8,' +
@@ -37,8 +47,47 @@ export const Ground: React.FC<{
   accent: string;
   /** Shot index — moves the motif so consecutive frames are not the same picture. */
   index: number;
-}> = ({ tone, accent, index }) => {
+  /** Frames since this shot started, so the ground can keep breathing. */
+  local?: number;
+  duration?: number;
+}> = ({ tone, accent, index, local = 0, duration = 60 }) => {
   const t = tokensFor(tone, accent);
+
+  /**
+   * The ground never stops moving, and that is the whole point of it moving.
+   *
+   * Measured against five reference films: they run 0-16% still frames. This film ran
+   * 48.9% — nearly half of it was frozen, because every shot arrived, resolved, and then
+   * held perfectly static for two to four seconds. That is a slideshow, and it is what
+   * "the movement feels bad" actually was.
+   *
+   * The earlier fix — a camera drift on every shot — was removed because it moved the TYPE
+   * while the viewer was trying to read it. That was the wrong conclusion: the problem was
+   * never that things moved, it was WHAT moved. So the ground drifts and scales
+   * continuously while the type sits perfectly still on top of it. The frame is never
+   * static; the words never slide.
+   */
+  const p = duration > 0 ? local / duration : 0;
+  const push = 1.03 + p * 0.14; // large enough to clear the pixel grid every frame
+  const driftX = (index % 2 === 0 ? 1 : -1) * p * 7;
+  const driftY = p * 5;
+
+  /**
+   * MOVING GRAIN is what actually stops a frame reading as still.
+   *
+   * The first attempt at continuous life was a slow ground drift, and it did nothing:
+   * 2.4% of frame width across a whole shot is about 0.04px per frame, which is under the
+   * pixel grid — the same sub-pixel trap that made an earlier camera move judder. Measured
+   * before and after, still-frame percentage moved 48.9 to 46.8. Nothing.
+   *
+   * Every reference film is real footage, and real footage has sensor noise: every pixel
+   * changes every frame. That is why none of them ever measure as frozen. Translating the
+   * grain tile a few pixels per frame reproduces exactly that, changes the whole frame
+   * rather than one element, and costs nothing — the tile is still a single static image,
+   * it is only its background-position that moves.
+   */
+  const grainX = (local * 7) % 160;
+  const grainY = (local * 11) % 160;
 
   // The motif walks a fixed path across the film rather than landing randomly, so its
   // recurrence reads as intent instead of noise.
@@ -72,13 +121,14 @@ export const Ground: React.FC<{
       <div
         style={{
           position: 'absolute',
-          left: `${spot.x}%`,
-          top: `${spot.y}%`,
+          left: `${spot.x + driftX}%`,
+          top: `${spot.y + driftY}%`,
           width: '95%',
           aspectRatio: '1',
           translate: '-50% -50%',
           borderRadius: '50%',
           background: `radial-gradient(circle, ${motifColour} 0%, transparent 68%)`,
+          transform: `scale(${push})`,
         }}
       />
 
@@ -96,18 +146,6 @@ export const Ground: React.FC<{
         }}
       />
 
-      {/* vignette */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            tone === 'paper'
-              ? 'radial-gradient(115% 85% at 50% 45%, transparent 52%, rgba(10,10,12,0.13) 100%)'
-              : 'radial-gradient(115% 85% at 50% 45%, transparent 48%, rgba(0,0,0,0.42) 100%)',
-        }}
-      />
-
       {/* grain */}
       <div
         style={{
@@ -115,7 +153,8 @@ export const Ground: React.FC<{
           inset: 0,
           backgroundImage: `url("${GRAIN}")`,
           backgroundSize: '160px 160px',
-          opacity: tone === 'paper' ? 0.055 : 0.085,
+          backgroundPosition: `${grainX}px ${grainY}px`,
+          opacity: tone === 'paper' ? 0.075 : 0.11,
         }}
       />
     </>

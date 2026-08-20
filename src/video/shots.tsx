@@ -404,13 +404,44 @@ export const ShotFrame: React.FC<{
   const energy = ENERGY[shot.kind] ?? 'standard';
   const dy = cameraOffset(local, shot.durationInFrames, shot.cameraDy);
 
+  /**
+   * A slow continuous push across the WHOLE frame — ground and content together.
+   *
+   * Measured against five reference films, they run 0-16% still frames; this ran 48.9%.
+   * Two attempts to fix it failed and both failed the same way: a ground drift and then
+   * moving grain, each too small to survive the measurement, which downsamples to 160px.
+   * Grain especially — it averages away completely at that scale, which is also roughly
+   * what happens to it on a phone.
+   *
+   * What every reference actually has is a camera that never stops. So does this now.
+   * Amplitude is set so the frame edges travel about 1px per frame: below that the
+   * renderer quantises the motion into a periodic lurch, and above about 1.5px/frame it
+   * starts to pull focus from the type. A uniform scale does not hurt readability the way
+   * the earlier per-shot drift did, because nothing moves relative to anything else.
+   */
+  const pushProgress = shot.durationInFrames > 0 ? local / shot.durationInFrames : 0;
+  const push = 1 + pushProgress * 0.1;
+
   return (
     <div style={{ position: 'absolute', inset: 0, background: t.bg, overflow: 'hidden' }}>
       {/* Ground and content travel together. A shot that is a small lit island on a dark
           stage measured 6% of the frame above luminance 40, and a whole-frame motion
           metric then scores 94% of every frame at exactly zero. */}
-      <div style={{ position: 'absolute', inset: '-12% 0', transform: `translateY(${dy}px)` }}>
-        <Ground tone={shot.tone} accent={accent} index={index} />
+      <div
+        style={{
+          position: 'absolute',
+          inset: '-12% 0',
+          transform: `translateY(${dy}px) scale(${push})`,
+          transformOrigin: '50% 50%',
+        }}
+      >
+        <Ground
+          tone={shot.tone}
+          accent={accent}
+          index={index}
+          local={local}
+          duration={shot.durationInFrames}
+        />
         <div style={{ position: 'absolute', inset: 0 }}>
           <Component
             shot={shot}
@@ -421,6 +452,20 @@ export const ShotFrame: React.FC<{
           />
         </div>
       </div>
+
+      {/* Vignette, fixed to the FRAME so the camera push cannot carry its corners out of
+          shot. Deep on dark grounds: measured darkest-5% was 14 against a reference range
+          of 0-4, and real blacks are the strongest expensive-looking tell in that set. */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            shot.tone === 'paper'
+              ? 'radial-gradient(116% 86% at 50% 45%, transparent 42%, rgba(10,10,12,0.34) 100%)'
+              : 'radial-gradient(116% 86% at 50% 45%, transparent 34%, rgba(0,0,0,0.92) 100%)',
+        }}
+      />
 
       <ShotChrome
         index={index}
