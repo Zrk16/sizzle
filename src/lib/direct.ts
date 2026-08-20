@@ -94,6 +94,9 @@ Available shot kinds:
   bento      - three cards on a tilting glass plane, showing what the project is MADE OF.
                The cards are filled in for you from real facts (language share, commit
                count, contributors, topics). Your 'text' is only a short label above them.
+  artwork    - the project's OWN hero image from its README, presented as a lit panel in
+               space. This is the only real photograph in the film, so if it is available
+               it is almost always worth a shot. Your 'text' is a short caption under it.
   pointer    - a real cursor travels in and presses a button. Your 'text' is the BUTTON
                LABEL: make it the actual action a developer would take with this project,
                two or three words, like "npm i lenis" or "Read the docs".
@@ -208,6 +211,11 @@ export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
   const basePrompt =
     `Direct the launch video for this project.\n\n${factSheet(facts)}\n\n` +
     `DIRECTION FOR THIS CUT: ${angle}\n` +
+    (facts.artwork
+      ? `THIS REPO HAS ITS OWN ARTWORK, so the 'artwork' shot is available and you should ` +
+        `strongly consider using it. It is the only real image in the film.${NL}`
+      : `THIS REPO HAS NO ARTWORK. The 'artwork' shot is NOT available for this cut; do ` +
+        `not use it, it would render empty.${NL}`) +
     `Use exactly ${shotCount} shots. Do not default to a familiar running order — ` +
     `vary which kind opens, and do not use 'stat' unless a number here is genuinely worth a whole shot.`;
   const problems: string[] = [];

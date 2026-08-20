@@ -54,7 +54,9 @@ for (const target of targets) {
                   ? `${s.payload!.lines.length} lines of ${s.payload!.path}`
                   : s.payload!.type === 'commits'
                     ? `${s.payload!.subjects.length} real commits`
-                    : `${s.payload!.items.length} fact cards`
+                    : s.payload!.type === 'cards'
+                      ? `${s.payload!.items.length} fact cards`
+                      : 'repo artwork'
               )
               .join(', ')}`
           : '')

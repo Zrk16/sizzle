@@ -108,6 +108,7 @@ export const ENERGY: Record<string, Energy> = {
   stack: 'standard',
   bigtype: 'standard',
   typeon: 'standard',
+  artwork: 'calm', // a picture is looked at, not hit
   bento: 'standard', // cards arrive, the plane settles
   pointer: 'standard', // a hand moving, not a hit
   stat: 'punch',

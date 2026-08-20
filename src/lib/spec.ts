@@ -34,6 +34,7 @@ export const SHOT_KINDS = [
   'stat', // one number, punctuation and never the hero
   'bento', // glass cards on a tilting plane — what the project is made of
   'pointer', // a real cursor travelling to a button and pressing it
+  'artwork', // the project's OWN hero image from its README, as a lit panel
   'lockup', // name + line — the ending
 ] as const;
 
@@ -149,6 +150,26 @@ export const aiSpecSchema = z
       });
     }
 
+    /**
+     * Artwork always stands on INK.
+     *
+     * The first artwork shot rendered a red project banner on a red-orange flood ground:
+     * the picture and the ground were the same hue and fought each other. A real image is
+     * the brightest, most detailed thing in any frame it appears in, so it should be the
+     * only lit object — one light source in darkness is the cheapest cinematic move there
+     * is, and it is what the reference films do with product shots.
+     */
+    spec.shots.forEach((sh, i) => {
+      if (sh.kind === 'artwork' && sh.tone !== 'ink') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['shots', i, 'tone'],
+          message:
+            'an "artwork" shot must stand on ink. The image is the brightest thing in the frame, so the ground has to be dark or the two compete.',
+        });
+      }
+    });
+
     if (kinds.at(-1) !== 'lockup') {
       ctx.addIssue({ code: 'custom', path: ['shots'], message: 'the last shot must be a lockup' });
     }
@@ -228,7 +249,9 @@ export type ShotPayload =
   | { type: 'code'; path: string; lines: string[] }
   | { type: 'commits'; subjects: string[] }
   /** Cards for a bento shot, built from real repo facts rather than written by the model. */
-  | { type: 'cards'; items: { title: string; note: string }[] };
+  | { type: 'cards'; items: { title: string; note: string }[] }
+  /** The repo's own README hero image, inlined so the browser render needs no network. */
+  | { type: 'artwork'; dataUri: string };
 
 export type RenderShot = Shot & {
   startFrame: number;
@@ -258,6 +281,8 @@ export type SpecFacts = {
   codeSample: { path: string; lines: string[] } | null;
   /** Feeds the bento cards. Real attributes of the project, never invented. */
   topics?: string[];
+  /** The repo's own hero image. Absent for plenty of repos, so every use is guarded. */
+  artwork?: { dataUri: string } | null;
   dependencies?: string[];
   languages?: { language: string; share: number }[];
   stars?: number;
@@ -316,6 +341,8 @@ export function toRenderSpec(
       payload = { type: 'code', path: facts.codeSample.path, lines: facts.codeSample.lines };
     } else if (shot.kind === 'bento') {
       payload = { type: 'cards', items: bentoCards(facts) };
+    } else if (shot.kind === 'artwork' && facts.artwork) {
+      payload = { type: 'artwork', dataUri: facts.artwork.dataUri };
     }
 
     /**

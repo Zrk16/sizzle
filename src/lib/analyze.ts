@@ -35,6 +35,8 @@ export type RepoFacts = {
   /** What it is built on. Often the clearest signal of what a project actually is. */
   dependencies: string[];
   codeSample: { path: string; lines: string[] } | null;
+  /** The repo's own hero image, inlined. The only genuinely real picture available. */
+  artwork: { dataUri: string; width: number; height: number } | null;
 };
 
 export class AnalyzeError extends Error {
@@ -238,6 +240,69 @@ async function pickCodeSample(
   };
 }
 
+/**
+ * The repo's own hero image, pulled out of its README.
+ *
+ * The film had no photography in it at all — every frame was type on a coloured ground,
+ * which is the difference between a title sequence and a launch video. A README banner is
+ * the one genuinely real, genuinely specific picture almost every serious repo already
+ * has, and it is the project's own brand asset rather than something generated to look
+ * like one.
+ *
+ * Badges are filtered out aggressively: a shields.io badge is not artwork, and a wall of
+ * them is the first thing in most READMEs.
+ *
+ * Fetched server-side and inlined as a data URI, deliberately. The film renders in the
+ * visitor's browser, and a remote image would be subject to CORS on hosts that have no
+ * reason to allow us; inlining removes the failure mode entirely and keeps the spec
+ * self-contained.
+ */
+const BADGE = /badge|shields\.io|travis|codecov|coveralls|circleci|npmjs\.com\/package|david-dm|snyk\.io|bundlephobia/i;
+
+async function readArtwork(
+  owner: string,
+  repo: string,
+  branch: string,
+  markdown: string
+): Promise<RepoFacts['artwork']> {
+  const found = [
+    ...markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g),
+    ...markdown.matchAll(/<img[^>]+src=["']([^"']+)/g),
+  ].map((m) => m[1]);
+
+  for (const raw of found) {
+    if (BADGE.test(raw)) continue;
+    // Contributor avatars are real but they are not the project's artwork.
+    if (/github\.com\/[^/]+\.png/i.test(raw)) continue;
+
+    const url = raw.startsWith('http')
+      ? raw
+      : `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${raw.replace(/^\.?\//, '')}`;
+
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'sizzle' } });
+      if (!res.ok) continue;
+      const type = res.headers.get('content-type') ?? '';
+      if (!type.startsWith('image/')) continue;
+
+      const buf = Buffer.from(await res.arrayBuffer());
+      // Anything past this is a video-sized GIF and not worth inlining into every spec.
+      if (buf.byteLength > 1_800_000 || buf.byteLength < 800) continue;
+
+      return {
+        dataUri: `data:${type.split(';')[0]};base64,${buf.toString('base64')}`,
+        // Real dimensions would need a decoder; the renderer only needs the aspect to be
+        // sane, and it letterboxes anything that is not.
+        width: 1200,
+        height: 630,
+      };
+    } catch {
+      // A dead image link in a README is normal. Try the next one.
+    }
+  }
+  return null;
+}
+
 export async function analyzeRepo(input: string): Promise<RepoFacts> {
   const { owner, repo } = parseRepoInput(input);
 
@@ -267,6 +332,13 @@ export async function analyzeRepo(input: string): Promise<RepoFacts> {
     readDependencies(owner, repo, meta.default_branch).catch(() => [] as string[]),
   ]);
 
+  const readmeText = readme
+    ? Buffer.from(readme.content, 'base64').toString('utf8')
+    : null;
+  const artwork = readmeText
+    ? await readArtwork(owner, repo, meta.default_branch, readmeText).catch(() => null)
+    : null;
+
   const totalBytes = Object.values(langs ?? {}).reduce((a, b) => a + b, 0) || 1;
 
   return {
@@ -294,12 +366,9 @@ export async function analyzeRepo(input: string): Promise<RepoFacts> {
     // first line only — commit bodies are noise on screen
     recentCommits: (commits ?? []).map((c) => c.commit.message.split('\n')[0].slice(0, 72)),
     contributorCount,
-    readmeFirstParagraph: readme
-      ? firstParagraph(Buffer.from(readme.content, 'base64').toString('utf8'))
-      : null,
-    readmeIntro: readme
-      ? readmeIntro(Buffer.from(readme.content, 'base64').toString('utf8'))
-      : null,
+    readmeFirstParagraph: readmeText ? firstParagraph(readmeText) : null,
+    readmeIntro: readmeText ? readmeIntro(readmeText) : null,
+    artwork,
     dependencies: deps,
     codeSample,
   };

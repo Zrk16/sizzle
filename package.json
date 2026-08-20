@@ -12,7 +12,9 @@
     "film": "remotion render src/video/index.ts Film"
   },
   "dependencies": {
+    "@remotion/motion-blur": "4.0.512",
     "@remotion/player": "4.0.512",
+    "@remotion/transitions": "4.0.512",
     "@remotion/web-renderer": "4.0.512",
     "geist": "^1.7.2",
     "gsap": "^3.15.0",

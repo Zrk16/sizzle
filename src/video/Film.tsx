@@ -3,6 +3,17 @@ import { AbsoluteFill, Sequence } from 'remotion';
 import type { RenderSpec } from '@/lib/spec';
 import { ShotFrame } from './shots';
 import { LOGICAL_HEIGHT } from './theme';
+import { CameraMotionBlur } from '@remotion/motion-blur';
+
+/** Passthrough when disabled, so the tree shape is identical either way. */
+const Blur: React.FC<{ enabled: boolean; children: React.ReactNode }> = ({ enabled, children }) =>
+  enabled ? (
+    <CameraMotionBlur shutterAngle={180} samples={6}>
+      {children}
+    </CameraMotionBlur>
+  ) : (
+    <>{children}</>
+  );
 import { Score } from './Score';
 
 /**
@@ -23,7 +34,22 @@ import { Score } from './Score';
  *    type render about a third of its intended size the first time a different aspect
  *    ratio was tried.
  */
-export const Film: React.FC<{ spec: RenderSpec }> = ({ spec }) => {
+/**
+ * `motionBlur` is OFF by default, and that is a constraint rather than a preference.
+ *
+ * CameraMotionBlur composites its time-shifted samples with `mixBlendMode: 'plus-lighter'`,
+ * and @remotion/web-renderer drops mix-blend-mode silently — measured, not assumed. In the
+ * browser the samples would stack at 1/N opacity with no additive blend, which is a ghosted
+ * smear rather than blur. So the product, which renders client-side, cannot have it.
+ *
+ * Headless renders can, and it is worth ~8x the render time: 5m22s against 40s for the same
+ * film. That matches the reference engine's own note calling it the biggest single quality
+ * jump it ever made.
+ */
+export const Film: React.FC<{ spec: RenderSpec; motionBlur?: boolean }> = ({
+  spec,
+  motionBlur = false,
+}) => {
   const scale = spec.height / LOGICAL_HEIGHT;
   const logicalWidth = spec.width / scale;
 
@@ -40,6 +66,7 @@ export const Film: React.FC<{ spec: RenderSpec }> = ({ spec }) => {
           transformOrigin: 'top left',
         }}
       >
+        <Blur enabled={motionBlur}>
         {spec.shots.map((shot, i) => (
           <Sequence
             key={i}
@@ -57,6 +84,7 @@ export const Film: React.FC<{ spec: RenderSpec }> = ({ spec }) => {
             />
           </Sequence>
         ))}
+        </Blur>
       </div>
     </AbsoluteFill>
   );

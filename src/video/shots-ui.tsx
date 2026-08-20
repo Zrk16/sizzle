@@ -249,3 +249,103 @@ export const Pointer: React.FC<UIShotProps> = ({ shot, accent, local, energy }) 
     </div>
   );
 };
+
+/**
+ * Artwork — the project's OWN hero image, presented as a lit panel in space.
+ *
+ * This is the only genuinely real picture in the whole film. Everything else is type on a
+ * ground, which is the difference between a title sequence and a launch video: the
+ * reference set is mostly product surfaces with type used as punctuation.
+ *
+ * Presented rather than pasted. A README banner dropped flat into a frame reads as a
+ * screenshot in a slide deck; the same image given perspective, a contact shadow and a
+ * slow push reads as an object that exists. The panel arrives slightly turned and settles
+ * toward square, so the shot is a camera finding it rather than a picture appearing.
+ */
+export const Artwork: React.FC<UIShotProps> = ({ shot, accent, local, energy, frameWidth }) => {
+  const t = tokensFor(shot.tone, accent);
+  const src = shot.payload?.type === 'artwork' ? shot.payload.dataUri : null;
+  const e = entrance(local, 4, energy);
+
+  // Settle toward square, and keep pushing very slightly the whole time so the panel
+  // never fully stops.
+  const settle = interpolate(local, [0, 52], [1, 0.35], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: (x) => 1 - Math.pow(1 - x, 3),
+  });
+  const drift = interpolate(local, [0, 120], [1, 1.045], { extrapolateRight: 'clamp' });
+
+  if (!src) {
+    // Plenty of repos have no artwork at all. Rather than render an empty frame, fall
+    // back to the label alone, which at least still says something true.
+    return (
+      <div style={{ ...FILL, justifyContent: 'center' }}>
+        <div
+          style={{
+            fontFamily: FONT.display,
+            fontWeight: 800,
+            fontSize: 120,
+            letterSpacing: '-0.04em',
+            color: t.fg,
+            opacity: e.opacity,
+          }}
+        >
+          {shot.text}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...FILL, justifyContent: 'center', alignItems: 'center' }}>
+      <div
+        style={{
+          width: Math.min(frameWidth - GUTTER * 2, 1360),
+          opacity: e.opacity,
+          transform:
+            'perspective(2200px) rotateY(' +
+            (-7 * settle).toFixed(2) +
+            'deg) rotateX(' +
+            (4 * settle).toFixed(2) +
+            'deg) scale(' +
+            drift.toFixed(3) +
+            ') translateY(' +
+            e.y.toFixed(1) +
+            'px)',
+          transformOrigin: '50% 45%',
+          borderRadius: 18,
+          overflow: 'hidden',
+          // Two-layer shadow: a wide ambient one and a tight contact one. The contact
+          // shadow is what makes it sit ON something rather than float.
+          boxShadow:
+            shot.tone === 'paper'
+              ? '0 54px 120px rgba(10,20,10,0.30), 0 14px 30px rgba(10,20,10,0.22)'
+              : '0 54px 120px rgba(0,0,0,0.72), 0 14px 30px rgba(0,0,0,0.6)',
+          border: '1px solid ' + (shot.tone === 'paper' ? 'rgba(10,20,10,0.12)' : 'rgba(255,255,255,0.12)'),
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt=""
+          style={{ display: 'block', width: '100%', height: 'auto' }}
+        />
+      </div>
+
+      <div
+        style={{
+          fontFamily: FONT.mono,
+          fontSize: 20,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: t.pop(accent),
+          marginTop: 34,
+          opacity: entrance(local, 14, energy).opacity,
+        }}
+      >
+        {shot.text}
+      </div>
+    </div>
+  );
+};
