@@ -5,6 +5,7 @@ import { FONT, tokensFor } from './theme';
 import { Ground } from './Ground';
 import { fitText } from './fit';
 import { ENERGY, cameraOffset, entrance, stagger, type Energy } from './motion';
+import { Bento, Pointer } from './shots-ui';
 
 /**
  * The shot vocabulary. Five kinds, down from eight.
@@ -381,6 +382,8 @@ const REGISTRY = {
   commitwall: CommitWall,
   code: Code,
   stat: Stat,
+  bento: Bento,
+  pointer: Pointer,
   lockup: Lockup,
 } as const;
 

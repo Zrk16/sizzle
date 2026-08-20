@@ -70,12 +70,15 @@ RULES, in priority order:
 3. The hook is a QUESTION that makes a developer curious. Not a slogan, not the project name.
 4. Adjacent shots must use different tones. ink is dark, paper is light, flood is the accent colour
    filling the frame. The tone change IS the cut — same tone twice reads as one long slide.
-5. The specific beats the generic. This project's real commit messages and real code are unfakeable
+5. Show INTERFACE, not only words. A film made entirely of type is a title sequence. Use
+   'bento' or 'pointer' at least once in most cuts — the reference films are mostly product
+   surfaces with type as punctuation, not the reverse.
+6. The specific beats the generic. This project's real commit messages and real code are unfakeable
    and instantly personal. Star counts and language percentages are punctuation — use at most one
    'stat' shot, never as the opening or the payoff.
-6. Short is strong. Every string has a hard character limit; write under it, not up to it.
-7. The last shot is always a lockup.
-8. Pick ONE accent colour that suits this project. Not a rainbow, not a default blue.
+7. Short is strong. Every string has a hard character limit; write under it, not up to it.
+8. The last shot is always a lockup.
+9. Pick ONE accent colour that suits this project. Not a rainbow, not a default blue.
 
 Available shot kinds:
   claim      - REQUIRED, exactly once, in the first three shots. One full plain sentence
@@ -88,6 +91,12 @@ Available shot kinds:
   code       - real source from the repo
   stat       - one number, EXACTLY as given in the facts. Punctuation only, at most once,
                and never the opening or the payoff.
+  bento      - three cards on a tilting glass plane, showing what the project is MADE OF.
+               The cards are filled in for you from real facts (language share, commit
+               count, contributors, topics). Your 'text' is only a short label above them.
+  pointer    - a real cursor travels in and presses a button. Your 'text' is the BUTTON
+               LABEL: make it the actual action a developer would take with this project,
+               two or three words, like "npm i lenis" or "Read the docs".
   lockup     - project name + one line. Always last.
 
 For 'code' and 'commitwall', the real source and the real commit list are inserted for you.
@@ -179,7 +188,17 @@ export type DirectResult = {
   model: string;
   attempts: number;
   /** What the writing critic said about the draft, when it ran. */
-  critique?: { problems: string[]; strangerTest: string; revised: boolean };
+  critique?: {
+    problems: string[];
+    strangerTest: string;
+    /** 'clean' the draft passed, 'revised' the notes were applied, 'failed' the rewrite
+     *  came back invalid and the original draft shipped unchanged. Reporting the third as
+     *  a pass hid the fact that nothing had actually been fixed. */
+    outcome: 'clean' | 'revised' | 'failed';
+    /** Validator complaints from the last failed rewrite. Kept so a recurring structural
+     *  failure is visible rather than being silently absorbed. */
+    blockedBy?: string[];
+  };
 };
 
 export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
@@ -225,35 +244,54 @@ export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
               model,
               attempts,
               critique: critique
-                ? { problems: [], strangerTest: critique.strangerTest, revised: false }
+                ? { problems: [], strangerTest: critique.strangerTest, outcome: 'clean' }
                 : undefined,
             };
           }
 
-          attempts++;
+          /**
+           * The revision needs the SAME repair loop the first draft gets.
+           *
+           * Without it the rewrite failed zod almost every time — measured three runs in a
+           * row — and the code then silently shipped the unrevised draft. The critic was
+           * finding real faults and every fix was being thrown away, which made the whole
+           * loop decorative. A rewrite is harder than a first draft, not easier: it has to
+           * satisfy the editor AND still alternate tones, end on a lockup, carry exactly
+           * one claim and stay inside the character caps.
+           */
           const notes = critique.problems.map((x) => `- ${x}`).join(NL);
-          try {
-            const second = await callGemini(
-              model,
-              `${basePrompt}${NL}${NL}You wrote this draft:${NL}${JSON.stringify(parsed.data, null, 1)}${NL}${NL}` +
-                `An editor reviewed it and raised these problems. Rewrite to fix EVERY one. ` +
-                `Keep what was working; change only what the notes call out.${NL}${notes}`
-            );
-            const revised = aiSpecSchema.safeParse(second);
-            if (revised.success) {
-              return {
-                spec: revised.data,
-                model,
-                attempts,
-                critique: {
-                  problems: critique.problems,
-                  strangerTest: critique.strangerTest,
-                  revised: true,
-                },
-              };
+          const editorial =
+            `${basePrompt}${NL}${NL}You wrote this draft:${NL}${JSON.stringify(parsed.data, null, 1)}${NL}${NL}` +
+            `An editor reviewed it and raised these problems. Rewrite to fix EVERY one. ` +
+            `Keep what was working; change only what the notes call out.${NL}${notes}`;
+
+          let structural: string[] = [];
+          for (let fix = 0; fix < 3; fix++) {
+            attempts++;
+            try {
+              const prompt2 = structural.length
+                ? `${editorial}${NL}${NL}Your rewrite was rejected by the validator for these reasons. ` +
+                  `Fix them WITHOUT reintroducing anything the editor objected to:${NL}` +
+                  structural.map((x) => `- ${x}`).join(NL)
+                : editorial;
+              const second = await callGemini(model, prompt2);
+              const revised = aiSpecSchema.safeParse(second);
+              if (revised.success) {
+                return {
+                  spec: revised.data,
+                  model,
+                  attempts,
+                  critique: {
+                    problems: critique.problems,
+                    strangerTest: critique.strangerTest,
+                    outcome: 'revised',
+                  },
+                };
+              }
+              structural = revised.error.issues.map((iss) => `${iss.path.join('.')}: ${iss.message}`);
+            } catch {
+              break; // model itself is unhappy; ship the draft rather than nothing
             }
-          } catch {
-            // Revision failed; the draft was already valid, so ship it rather than nothing.
           }
           return {
             spec: parsed.data,
@@ -262,7 +300,8 @@ export async function directVideo(facts: RepoFacts): Promise<DirectResult> {
             critique: {
               problems: critique.problems,
               strangerTest: critique.strangerTest,
-              revised: false,
+              outcome: 'failed',
+              blockedBy: structural,
             },
           };
         }

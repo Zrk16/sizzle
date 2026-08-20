@@ -28,8 +28,15 @@ console.log(`shots  ${render.shots.map((s) => `${s.tone}/${s.kind}`).join('  ')}
 console.log(`frames ${render.durationInFrames} at ${render.width}x${render.height}`);
 if (critique) {
   console.log('');
-  console.log(`EDITOR: ${critique.revised ? 'sent back for revision' : 'passed'}`);
+  const label =
+    critique.outcome === 'clean'
+      ? 'passed clean'
+      : critique.outcome === 'revised'
+        ? 'sent back, notes applied'
+        : 'sent back, REWRITE FAILED VALIDATION - shipped the original draft';
+  console.log(`EDITOR: ${label}`);
   critique.problems.forEach((problem) => console.log(`  - ${problem}`));
+  (critique.blockedBy ?? []).forEach((b) => console.log(`  BLOCKED BY: ${b}`));
   console.log(`  stranger test: ${critique.strangerTest}`);
 }
 console.log('');

@@ -61,6 +61,20 @@ Mark "revise" if ANY of these are true. Be strict; most first drafts fail at lea
 6. A WEAK ENDING. The closer restates the claim, or it is a slogan rather than a line worth ending on.
 7. NOTHING SPECIFIC TO THIS PROJECT. If the script would work for any library in the same category with the name swapped, it has failed.
 
+THE SPACE YOU ARE EDITING FOR. Every note you write has to be achievable inside these
+limits, because a rewrite that breaks them is rejected outright and your notes are then
+thrown away with it:
+
+  claim   at most 96 characters. That is roughly sixteen words. It is ONE sentence.
+  others  at most 34 characters.
+  closer  at most 28 characters.
+
+This matters more than it sounds. Asking for "also mention X" on a claim that is already
+near the limit is not a note, it is an impossible instruction — the writer can only obey it
+by overflowing, and then nothing you asked for gets applied. If a claim is missing
+something important, say what to CUT to make room for it. Prefer "replace A with B" over
+"add C". A shorter, sharper line beats a longer, more complete one every time.
+
 Return "pass" only if you would put your own name on it.`;
 
 export type WritingCritique = {

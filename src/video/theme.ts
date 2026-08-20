@@ -101,7 +101,9 @@ export function tokensFor(tone: Tone, accent: string): ToneTokens & { bg: string
     ...base,
     bg,
     fg,
-    dim: fg === '#FFFFFF' ? 'rgba(255,255,255,0.66)' : 'rgba(10,10,12,0.58)',
+    // Raised from 0.66/0.58: monospaced code at 24px over a saturated ground was
+    // washing out. A dim tone still has to be READ.
+    dim: fg === '#FFFFFF' ? 'rgba(255,255,255,0.82)' : 'rgba(10,10,12,0.74)',
     rule: fg === '#FFFFFF' ? 'rgba(255,255,255,0.26)' : 'rgba(10,10,12,0.22)',
     pop: () => fg,
   };

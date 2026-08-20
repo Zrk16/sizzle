@@ -1,34 +1,47 @@
 {
-  "hook": "How to make scrolling feel better?",
-  "accent": "#E8552D",
-  "closer": "Drive any scroll.",
+  "hook": "Why does native scroll feel broken?",
+  "accent": "#7289DA",
+  "closer": "Scroll as it should be.",
   "repo": "lenis",
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "durationInFrames": 575,
+  "durationInFrames": 621,
   "shots": [
-    {
-      "kind": "bigtype",
-      "tone": "ink",
-      "text": "Janky scroll?",
-      "startFrame": 0,
-      "durationInFrames": 53,
-      "cameraDy": 0
-    },
     {
       "kind": "claim",
       "tone": "paper",
-      "text": "Lenis wraps native scroll for smooth vertical, horizontal, and nested scrolling.",
-      "startFrame": 53,
-      "durationInFrames": 157,
+      "text": "Lenis wraps native browser scroll to enable performant vertical and horizontal movement.",
+      "startFrame": 0,
+      "durationInFrames": 168,
       "cameraDy": 0
     },
     {
-      "kind": "code",
+      "kind": "commitwall",
       "tone": "ink",
-      "text": "Core animation logic",
-      "startFrame": 210,
+      "text": "1,072 commits to the core",
+      "startFrame": 168,
+      "durationInFrames": 140,
+      "cameraDy": -140,
+      "payload": {
+        "type": "commits",
+        "subjects": [
+          "v1.3.26",
+          "feat(core): respect prefers-reduced-motion by default (#534) (#537)",
+          "Update sponsor logos in README.md",
+          "Update sponsors section in README.md",
+          "v1.3.25",
+          "fix(core): resolve anchor targets with CSS-special-char ids (#520) (#526",
+          "v1.3.24",
+          "fix(core): don't scroll while dragging iOS text-selection handles (#524)"
+        ]
+      }
+    },
+    {
+      "kind": "code",
+      "tone": "flood",
+      "text": "The animation engine",
+      "startFrame": 308,
       "durationInFrames": 117,
       "cameraDy": 117,
       "payload": {
@@ -53,39 +66,43 @@
       }
     },
     {
-      "kind": "commitwall",
+      "kind": "bento",
       "tone": "paper",
-      "text": "Respects reduced motion",
-      "startFrame": 327,
-      "durationInFrames": 117,
-      "cameraDy": -117,
+      "text": "TypeScript-first architecture",
+      "startFrame": 425,
+      "durationInFrames": 53,
+      "cameraDy": 0,
       "payload": {
-        "type": "commits",
-        "subjects": [
-          "v1.3.26",
-          "feat(core): respect prefers-reduced-motion by default (#534) (#537)",
-          "Update sponsor logos in README.md",
-          "Update sponsors section in README.md",
-          "v1.3.25",
-          "fix(core): resolve anchor targets with CSS-special-char ids (#520) (#526",
-          "v1.3.24",
-          "fix(core): don't scroll while dragging iOS text-selection handles (#524)"
+        "type": "cards",
+        "items": [
+          {
+            "title": "TypeScript",
+            "note": "76% of the code"
+          },
+          {
+            "title": "1072",
+            "note": "commits"
+          },
+          {
+            "title": "32",
+            "note": "contributors"
+          }
         ]
       }
     },
     {
-      "kind": "stat",
-      "tone": "flood",
-      "text": "15502 stars",
-      "startFrame": 444,
-      "durationInFrames": 53,
+      "kind": "pointer",
+      "tone": "ink",
+      "text": "npm install lenis",
+      "startFrame": 478,
+      "durationInFrames": 65,
       "cameraDy": 0
     },
     {
       "kind": "lockup",
-      "tone": "ink",
+      "tone": "flood",
       "text": "Lenis",
-      "startFrame": 497,
+      "startFrame": 543,
       "durationInFrames": 78,
       "cameraDy": 0
     }

@@ -3,107 +3,119 @@ import type { RenderSpec } from '@/lib/spec';
 /**
  * The score, generated from the spec.
  *
- * The film was silent, and a silent cut reads as a slideshow no matter how well eased —
- * /brag's whole brief is half audio, with reveals landing on beats and effects matched to
- * motion. This is the missing half.
+ * SECOND VERSION. The first was two sine drones a fifth apart with a pitched transient on
+ * each cut, and it was described exactly right on review: "a whistle, then a plop at every
+ * scene, no background". Both faults are the same mistake — using OSCILLATORS where film
+ * sound uses TEXTURE.
  *
- * It is SYNTHESISED rather than sourced, for one decisive reason: the hits are computed
- * from the shot boundaries, so a cut can never drift out of sync with its sound. A music
- * bed licensed from anywhere has a fixed tempo, and the film's shot lengths come from how
- * long its text takes to read — those two do not agree, and forcing them means either
- * cutting on the wrong frame or reading half a sentence. Generating the audio from the
- * edit makes sync structural instead of a thing to nudge.
+ *   A sustained pure tone is a test signal. Ears hear a sine at 55Hz plus its fifth as a
+ *   whistle because nothing in a room ever sounds like that; real atmosphere is broadband
+ *   noise shaped by a filter, which is why it sits under a picture instead of on top of it.
  *
- * Everything below is a pure function of the spec: same spec, same bytes, every time.
- * Remotion renders by seeking, so anything time-dependent or random would desync.
+ *   A hit with a strong pitched body is a plop, because the pitch makes it a NOTE and a
+ *   note in a bed with no key sounds wrong wherever you put it. Impacts in a mix are
+ *   mostly filtered noise plus a very low, very fast thump you feel more than hear.
+ *
+ * So the bed is now brown noise through a one-pole lowpass with a slow filter sweep — room
+ * tone, essentially — over a sub too low to carry pitch. The hits are a lowpassed noise
+ * burst plus a 52Hz thump, with the pitched component gone.
+ *
+ * Everything is a pure function of the spec: same spec, same bytes. Remotion renders by
+ * seeking, so a clock or Math.random anywhere here would desync a frame.
  */
 
-const SAMPLE_RATE = 22_050; // mono, speech-band; a bed and some hits need nothing more
+const SAMPLE_RATE = 22_050;
 const BYTES_PER_SAMPLE = 2;
-
-/** Musical intervals from the root, as frequency ratios. Just intonation, so the bed
- *  beats slowly rather than sitting perfectly still. */
-const FIFTH = 3 / 2;
-const OCTAVE = 2;
-
-/** Root of the drone, in Hz. Low enough to sit under type without competing with it. */
-const ROOT = 55; // A1
 
 function clamp(v: number, lo: number, hi: number) {
   return v < lo ? lo : v > hi ? hi : v;
 }
 
 /**
- * Deterministic value noise. `Math.random` cannot appear anywhere near a seeked render —
- * two renders of the same frame would differ — so this is a hash of the sample index.
+ * Deterministic white noise. A hash of the sample index, not a PRNG with state — a seeked
+ * render must be able to produce sample N without having produced N-1.
  */
-function noise(i: number): number {
-  const x = Math.sin(i * 12.9898) * 43758.5453;
+function white(i: number): number {
+  const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
   return (x - Math.floor(x)) * 2 - 1;
-}
-
-/** One percussive hit: a short filtered-noise transient over a pitched body. */
-function hit(t: number, i: number, strength: number): number {
-  if (t < 0) return 0;
-  const transient = Math.exp(-t * 46) * noise(i) * 0.5;
-  const body = Math.exp(-t * 12) * Math.sin(2 * Math.PI * (ROOT * OCTAVE) * t);
-  return (transient + body * 0.7) * strength;
-}
-
-/** A soft riser leading into a cut, so the edit is anticipated rather than just arriving. */
-function riser(t: number, length: number): number {
-  if (t < 0 || t > length) return 0;
-  const p = t / length;
-  const sweep = 180 + p * p * 900;
-  return Math.sin(2 * Math.PI * sweep * t) * p * p * 0.055;
 }
 
 export type Score = { dataUri: string; seconds: number; hits: number };
 
-/**
- * Render the whole score to a WAV data URI.
- *
- * A data URI rather than a file because the score is different for every repo — it is
- * derived from that film's own cut points — so there is nothing to host. At 22.05kHz mono
- * a twenty-second score is about 440KB of PCM, which is acceptable inline and far smaller
- * than any real track would be.
- */
 export function buildScore(spec: RenderSpec): Score {
   const seconds = spec.durationInFrames / spec.fps;
   const total = Math.ceil(seconds * SAMPLE_RATE);
   const pcm = new Int16Array(total);
 
-  // Cut points, in seconds. The first shot is not a cut — nothing precedes it.
+  // Cut points in seconds. The first shot is not a cut; nothing precedes it.
   const cuts = spec.shots.slice(1).map((s) => s.startFrame / spec.fps);
+
+  // --- filter state. These integrate across samples, which is fine: the whole buffer is
+  // built in one pass from sample 0, so the result is still identical every run.
+  let brown = 0; // running integral of white noise
+  let lp1 = 0; // bed lowpass stages
+  let lp2 = 0;
+  let hitLp = 0; // separate lowpass for impacts
 
   for (let i = 0; i < total; i++) {
     const t = i / SAMPLE_RATE;
-    let v = 0;
 
-    // --- the bed: two detuned drones a fifth apart, breathing slowly
-    const breath = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.08 * t);
-    v += Math.sin(2 * Math.PI * ROOT * t) * 0.16 * (0.7 + 0.3 * breath);
-    v += Math.sin(2 * Math.PI * ROOT * FIFTH * t) * 0.09 * breath;
-    // A little air on top so it is not purely sub-bass on small speakers.
-    v += Math.sin(2 * Math.PI * ROOT * OCTAVE * OCTAVE * t) * 0.02 * breath;
+    // ---------------------------------------------------------------- bed
+    // Brown noise: integrate white and leak, so it drifts without running away.
+    brown = brown * 0.996 + white(i) * 0.055;
 
-    // --- hits on the cuts, with a riser into each
+    // Two-pole lowpass with a slow sweep. The sweep is what stops it sounding like static
+    // — the timbre moves, the way air in a room does.
+    const sweep = 0.055 + 0.03 * Math.sin(2 * Math.PI * 0.045 * t);
+    lp1 += sweep * (brown - lp1);
+    lp2 += sweep * (lp1 - lp2);
+
+    /**
+     * Gain staging, set by measurement rather than by ear.
+     *
+     * The first pass at this ran the bed at RMS ~18500 of 32767 — about -5dBFS, which is
+     * mastering level for a whole mix, not for something meant to sit UNDER a picture.
+     * Hits then measured only 1.45x above it, so nothing landed. A bed belongs around
+     * -20dBFS with impacts several times above.
+     */
+    let v = lp2 * 0.62;
+
+    // A little air, so the bed is not purely rumble. Brown noise falls off at 6dB/octave,
+    // which leaves nothing at all above a few hundred Hz — and a bed with no top reads as
+    // a rumble rather than as a room.
+    v += (white(i * 2 + 1) - white(i * 2)) * 0.012;
+
+    // A sub for weight. At 34Hz this is below where pitch is really heard — it reads as
+    // size, not as a note, which is the difference between a bed and a drone.
+    v += Math.sin(2 * Math.PI * 34 * t) * 0.028 * (0.75 + 0.25 * Math.sin(2 * Math.PI * 0.07 * t));
+
+    // ---------------------------------------------------------------- hits
     for (let c = 0; c < cuts.length; c++) {
       const dt = t - cuts[c];
-      if (dt > -0.45 && dt < 1.2) {
-        // Alternate strength so a run of cuts has a rhythm rather than a metronome.
-        v += hit(dt, i, c % 2 === 0 ? 0.42 : 0.3);
-        v += riser(dt + 0.45, 0.45);
-      }
+      if (dt < -0.0001 || dt > 0.9) continue;
+
+      // Impact: a burst of noise, lowpassed hard so it is a thud rather than a tick.
+      const burst = white(i + c * 7919) * Math.exp(-dt * 30);
+      hitLp += 0.16 * (burst - hitLp);
+
+      // Thump: very low, very fast. Felt more than heard.
+      const thump = Math.sin(2 * Math.PI * 52 * dt) * Math.exp(-dt * 17);
+
+      // Alternate weight so a run of cuts has a rhythm rather than a metronome.
+      const strength = c % 2 === 0 ? 1 : 0.78;
+      v += (hitLp * 3.6 + thump * 0.5) * strength;
+
+      // A short swell of bed level INTO the next cut, so the edit is anticipated.
+      if (dt > 0.02) v *= 1 + Math.exp(-dt * 4) * 0.12;
     }
 
-    // --- fades, so the file never clicks at either end
-    const fadeIn = clamp(t / 0.6, 0, 1);
-    const fadeOut = clamp((seconds - t) / 1.1, 0, 1);
+    // ---------------------------------------------------------------- shape
+    const fadeIn = clamp(t / 0.8, 0, 1);
+    const fadeOut = clamp((seconds - t) / 1.3, 0, 1);
     v *= fadeIn * fadeOut;
 
-    // Soft clip rather than hard limit: a tanh curve keeps transients from crackling.
-    pcm[i] = Math.round(clamp(Math.tanh(v * 1.2), -1, 1) * 32767 * 0.9);
+    // Soft clip. tanh keeps transients from crackling where a hard limit would.
+    pcm[i] = Math.round(clamp(Math.tanh(v * 1.15), -1, 1) * 32767 * 0.82);
   }
 
   return { dataUri: wavDataUri(pcm), seconds, hits: cuts.length };
@@ -123,13 +135,13 @@ function wavDataUri(pcm: Int16Array): string {
   view.setUint32(4, 36 + dataBytes, true);
   ascii(8, 'WAVE');
   ascii(12, 'fmt ');
-  view.setUint32(16, 16, true); // PCM header size
-  view.setUint16(20, 1, true); // format: PCM
-  view.setUint16(22, 1, true); // channels: mono
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // mono
   view.setUint32(24, SAMPLE_RATE, true);
-  view.setUint32(28, SAMPLE_RATE * BYTES_PER_SAMPLE, true); // byte rate
-  view.setUint16(32, BYTES_PER_SAMPLE, true); // block align
-  view.setUint16(34, 8 * BYTES_PER_SAMPLE, true); // bits per sample
+  view.setUint32(28, SAMPLE_RATE * BYTES_PER_SAMPLE, true);
+  view.setUint16(32, BYTES_PER_SAMPLE, true);
+  view.setUint16(34, 8 * BYTES_PER_SAMPLE, true);
   ascii(36, 'data');
   view.setUint32(40, dataBytes, true);
   for (let i = 0; i < pcm.length; i++) view.setInt16(44 + i * 2, pcm[i], true);

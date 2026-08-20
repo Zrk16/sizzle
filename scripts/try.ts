@@ -52,7 +52,9 @@ for (const target of targets) {
               .map((s) =>
                 s.payload!.type === 'code'
                   ? `${s.payload!.lines.length} lines of ${s.payload!.path}`
-                  : `${s.payload!.subjects.length} real commits`
+                  : s.payload!.type === 'commits'
+                    ? `${s.payload!.subjects.length} real commits`
+                    : `${s.payload!.items.length} fact cards`
               )
               .join(', ')}`
           : '')

@@ -32,6 +32,8 @@ export const SHOT_KINDS = [
   'commitwall', // the dev's real commit subjects, stacked and staggered
   'code', // real source from the repo
   'stat', // one number, punctuation and never the hero
+  'bento', // glass cards on a tilting plane — what the project is made of
+  'pointer', // a real cursor travelling to a button and pressing it
   'lockup', // name + line — the ending
 ] as const;
 
@@ -203,7 +205,9 @@ export type Effort = 'fast' | 'balanced' | 'cinematic';
 /** Real repo content injected into shots that must not be paraphrased. */
 export type ShotPayload =
   | { type: 'code'; path: string; lines: string[] }
-  | { type: 'commits'; subjects: string[] };
+  | { type: 'commits'; subjects: string[] }
+  /** Cards for a bento shot, built from real repo facts rather than written by the model. */
+  | { type: 'cards'; items: { title: string; note: string }[] };
 
 export type RenderShot = Shot & {
   startFrame: number;
@@ -231,7 +235,41 @@ export type SpecFacts = {
   repo: string;
   recentCommits: string[];
   codeSample: { path: string; lines: string[] } | null;
+  /** Feeds the bento cards. Real attributes of the project, never invented. */
+  topics?: string[];
+  dependencies?: string[];
+  languages?: { language: string; share: number }[];
+  stars?: number;
+  contributorCount?: number | null;
+  commitCount?: number | null;
 };
+
+/**
+ * Three cards for a bento shot, drawn from what the repo actually IS.
+ *
+ * Deliberately not written by the model: a card grid is exactly the shape that invites
+ * invented feature bullets, and invented features are the fastest way to make a generated
+ * video worthless. Languages, topics and dependencies are all verifiable facts.
+ */
+function bentoCards(facts: SpecFacts): { title: string; note: string }[] {
+  const cards: { title: string; note: string }[] = [];
+
+  const top = facts.languages?.[0];
+  if (top) cards.push({ title: top.language, note: `${top.share}% of the code` });
+  if (facts.commitCount) cards.push({ title: String(facts.commitCount), note: 'commits' });
+  if (facts.contributorCount) {
+    cards.push({ title: String(facts.contributorCount), note: 'contributors' });
+  }
+  for (const topic of facts.topics ?? []) {
+    if (cards.length >= 3) break;
+    cards.push({ title: topic, note: 'topic' });
+  }
+  for (const dep of facts.dependencies ?? []) {
+    if (cards.length >= 3) break;
+    cards.push({ title: dep, note: 'built on' });
+  }
+  return cards.slice(0, 3);
+}
 
 /**
  * Turn the model's creative choices into a fully specified render. Every number below
@@ -255,6 +293,8 @@ export function toRenderSpec(
       payload = { type: 'commits', subjects: facts.recentCommits.slice(0, 8) };
     } else if (shot.kind === 'code' && facts.codeSample) {
       payload = { type: 'code', path: facts.codeSample.path, lines: facts.codeSample.lines };
+    } else if (shot.kind === 'bento') {
+      payload = { type: 'cards', items: bentoCards(facts) };
     }
 
     /**
