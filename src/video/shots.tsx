@@ -5,6 +5,7 @@ import { FONT, tokensFor } from './theme';
 import { Ground } from './Ground';
 import { fitText } from './fit';
 import { ENERGY, cameraOffset, entrance, stagger, type Energy } from './motion';
+import { crossIn, midBeat } from './beats';
 import { Artwork, Bento, Pointer } from './shots-ui';
 
 /**
@@ -21,6 +22,17 @@ import { Artwork, Bento, Pointer } from './shots-ui';
 
 /** Side gutter on the logical canvas. */
 const GUTTER = 132;
+
+/**
+ * Frames between sibling arrivals.
+ *
+ * Measured sibling stagger in the reference set is 307ms median (139-495ms) — about 9
+ * frames at 30fps. This was 1.8-2.5 frames, i.e. 60-83ms, so an eight-line commit wall
+ * finished arriving inside 700ms and the remaining three seconds of the shot were a single
+ * held picture. Spreading the arrivals across the shot is where the missing events are:
+ * one reference scene lands its labels at 875, 1846, 2528 and 3162ms of a 4.9s beat.
+ */
+const SIBLING = 9;
 
 type ShotProps = {
   shot: RenderShot;
@@ -169,7 +181,7 @@ const CommitWall: React.FC<ShotProps> = ({ shot, accent, local, energy, frameWid
     <div style={{ ...FILL, justifyContent: 'center' }}>
       <Label text={shot.text} colour={t.pop(accent)} local={local} energy={energy} />
       {subjects.map((subject, i) => {
-        const e = entrance(local, stagger(i, 2.5), energy);
+        const e = entrance(local, stagger(i, SIBLING), energy);
         return (
           <div
             key={i}
@@ -234,7 +246,7 @@ const Code: React.FC<ShotProps> = ({ shot, accent, local, energy, frameWidth }) 
         )}
       </div>
       {lines.map((line, i) => {
-        const e = entrance(local, stagger(i, 1.8), energy);
+        const e = entrance(local, stagger(i, SIBLING * 0.7), energy);
         return (
           <div
             key={i}
@@ -419,7 +431,8 @@ export const ShotFrame: React.FC<{
   total: number;
   repo: string;
   frameWidth: number;
-}> = ({ shot, accent, index, total, repo, frameWidth }) => {
+  toneChanged?: boolean;
+}> = ({ shot, accent, index, total, repo, frameWidth, toneChanged = false }) => {
   // `useCurrentFrame` inside a <Sequence> is ALREADY relative to that sequence's start.
   // Subtracting startFrame again drove every shot after the first to a negative frame,
   // which clamped its entrance to opacity 0 — shot one played and the rest went blank.
@@ -447,8 +460,30 @@ export const ShotFrame: React.FC<{
   const pushProgress = shot.durationInFrames > 0 ? local / shot.durationInFrames : 0;
   const push = 1 + pushProgress * (shot.camera === 'push' ? 0.55 : 0.1);
 
+  /**
+   * The two additions that raise event density.
+   *
+   * `enter` softens only tone-inverting boundaries, so the film stops making the same hard
+   * cut every time — the reference film splits its changes roughly half instant, half
+   * gradual, where this was 5 of 6 instant.
+   *
+   * `beat` is a second event inside the shot. Without one, a 3.5s shot is 3.5 seconds of a
+   * held picture, and the only thing that ever changes in the whole film is a cut. It
+   * drives an accent rule that draws across the frame at the 58% mark.
+   */
+  const enter = toneChanged ? crossIn(local, 7) : 1;
+  const beat = midBeat(local, shot.durationInFrames);
+
   return (
-    <div style={{ position: 'absolute', inset: 0, background: t.bg, overflow: 'hidden' }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: t.bg,
+        overflow: 'hidden',
+        opacity: enter,
+      }}
+    >
       {/* Ground and content travel together. A shot that is a small lit island on a dark
           stage measured 6% of the frame above luminance 40, and a whole-frame motion
           metric then scores 94% of every frame at exactly zero. */}
@@ -500,6 +535,24 @@ export const ShotFrame: React.FC<{
             shot.tone === 'paper'
               ? 'radial-gradient(116% 86% at 50% 45%, transparent 42%, rgba(10,10,12,0.34) 100%)'
               : 'radial-gradient(116% 86% at 50% 45%, transparent 34%, rgba(0,0,0,0.92) 100%)',
+        }}
+      />
+
+      {/* The mid-shot beat, drawn over the vignette so it stays legible on both grounds.
+          One accent rule wiping across the frame at the 58% mark: it is the only thing that
+          happens between a shot's entrance and its cut, and it is what stops a 3.5s hold
+          from scoring zero motion for three of those seconds. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: GUTTER,
+          right: GUTTER,
+          top: '50%',
+          height: 2,
+          transformOrigin: '0% 50%',
+          transform: `scaleX(${beat})`,
+          background: `linear-gradient(90deg, ${t.pop(accent)} 0%, transparent 100%)`,
+          opacity: 0.5 * beat,
         }}
       />
 

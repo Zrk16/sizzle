@@ -100,6 +100,10 @@ export const Film: React.FC<{ spec: RenderSpec; motionBlur?: boolean }> = ({
               total={spec.shots.length}
               repo={spec.repo ?? ''}
               frameWidth={logicalWidth}
+              // A cut between two grounds of the same tone is invisible anyway; a cut
+              // between ink and paper is a near-full luminance inversion and was the
+              // harshest frame delta in the film. Only the second kind gets softened.
+              toneChanged={i > 0 && spec.shots[i - 1].tone !== shot.tone}
             />
           </Sequence>
         ))}
