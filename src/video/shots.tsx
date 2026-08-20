@@ -175,33 +175,70 @@ const BigType: React.FC<ShotProps> = ({ shot, accent, local, energy, frameWidth 
  */
 const CommitWall: React.FC<ShotProps> = ({ shot, accent, local, energy, frameWidth }) => {
   const t = tokensFor(shot.tone, accent);
-  const subjects = shot.payload?.type === 'commits' ? shot.payload.subjects : [];
+  const subjects = (shot.payload?.type === 'commits' ? shot.payload.subjects : []).slice(0, 6);
   const width = frameWidth - GUTTER * 2;
+  const card = Math.round(width * 0.62);
+
   return (
     <div style={{ ...FILL, justifyContent: 'center' }}>
       <Label text={shot.text} colour={t.pop(accent)} local={local} energy={energy} />
-      {subjects.map((subject, i) => {
-        const e = entrance(local, stagger(i, SIBLING), energy);
-        return (
-          <div
-            key={i}
-            style={{
-              fontFamily: FONT.mono,
-              fontSize: 38,
-              lineHeight: 1.6,
-              color: i === 0 ? t.fg : t.dim,
-              opacity: e.opacity,
-              transform: `translateY(${e.y * 0.5}px)`,
-              maxWidth: width,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {subject}
-          </div>
-        );
-      })}
+      <div
+        style={{
+          position: 'relative',
+          height: 520,
+          perspective: '1500px',
+          perspectiveOrigin: '38% 50%',
+        }}
+      >
+        {/* Deepest card first, so DOM order is back-to-front. The renderer drops z-index,
+            so paint order is the only layering there is. */}
+        {subjects
+          .map((subject, i) => ({ subject, i }))
+          .reverse()
+          .map(({ subject, i }) => {
+            const e = entrance(local, stagger(i, SIBLING), energy);
+            // Each step recedes and climbs, so the stack reads as a diagonal running away
+            // from the camera rather than a pile. Depth also drives colour and opacity:
+            // things further away are dimmer, which is most of what sells the distance.
+            const depth = i / Math.max(1, subjects.length - 1);
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  left: 70 + i * 46,
+                  top: 322 - i * 58,
+                  width: card,
+                  transform: `translateZ(${-i * 132}px) translateX(${e.y * 1.4}px) rotateY(-15deg) rotateX(7deg)`,
+                  transformOrigin: '0% 50%',
+                  opacity: e.opacity * (1 - depth * 0.26),
+                  background: shot.tone === 'paper' ? 'rgba(255,255,255,0.9)' : 'rgba(41,44,50,0.96)',
+                  border: `1px solid ${t.pop(accent)}${i === 0 ? '88' : '3a'}`,
+                  borderRadius: 14,
+                  padding: '22px 30px',
+                  boxShadow:
+                    shot.tone === 'paper'
+                      ? '0 30px 60px rgba(20,22,28,0.16)'
+                      : '0 30px 70px rgba(0,0,0,0.6)',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: FONT.mono,
+                    fontSize: 30,
+                    lineHeight: 1.35,
+                    color: i === 0 ? t.fg : t.dim,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {subject}
+                </div>
+              </div>
+            );
+          })}
+      </div>
     </div>
   );
 };
