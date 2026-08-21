@@ -251,7 +251,9 @@ export type ShotPayload =
   /** Cards for a bento shot, built from real repo facts rather than written by the model. */
   | { type: 'cards'; items: { title: string; note: string }[] }
   /** The repo's own README hero image, inlined so the browser render needs no network. */
-  | { type: 'artwork'; dataUri: string };
+  | { type: 'artwork'; dataUri: string }
+  /** A screenshot of the project's live site, shown inside browser chrome. */
+  | { type: 'screen'; dataUri: string; site: string };
 
 export type RenderShot = Shot & {
   startFrame: number;
@@ -285,6 +287,7 @@ export type SpecFacts = {
   topics?: string[];
   /** The repo's own hero image. Absent for plenty of repos, so every use is guarded. */
   artwork?: { dataUri: string } | null;
+  siteShot?: { dataUri: string; site: string } | null;
   dependencies?: string[];
   languages?: { language: string; share: number }[];
   stars?: number;
@@ -349,8 +352,14 @@ export function toRenderSpec(
       payload = { type: 'code', path: facts.codeSample.path, lines: facts.codeSample.lines };
     } else if (shot.kind === 'bento') {
       payload = { type: 'cards', items: bentoCards(facts) };
-    } else if (shot.kind === 'artwork' && facts.artwork) {
-      payload = { type: 'artwork', dataUri: facts.artwork.dataUri };
+    } else if (shot.kind === 'artwork' && (facts.siteShot || facts.artwork)) {
+      // A screenshot of the running product beats a README banner every time: it is the
+      // thing the repo actually made, and unlike a flat banner it has UI in it — chrome,
+      // panels, type at several scales — so there is something in frame worth moving a
+      // camera across. The banner stays as the fallback for repos with no site.
+      payload = facts.siteShot
+        ? { type: 'screen', dataUri: facts.siteShot.dataUri, site: facts.siteShot.site }
+        : { type: 'artwork', dataUri: facts.artwork!.dataUri };
     }
 
     /**

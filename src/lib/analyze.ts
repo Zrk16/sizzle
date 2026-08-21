@@ -37,6 +37,8 @@ export type RepoFacts = {
   codeSample: { path: string; lines: string[] } | null;
   /** The repo's own hero image, inlined. The only genuinely real picture available. */
   artwork: { dataUri: string; width: number; height: number } | null;
+  /** A screenshot of the project's live site, inlined. The only real product UI we get. */
+  siteShot: { dataUri: string; width: number; height: number; site: string } | null;
 };
 
 export class AnalyzeError extends Error {
@@ -259,6 +261,78 @@ async function pickCodeSample(
  */
 const BADGE = /badge|shields\.io|travis|codecov|coveralls|circleci|npmjs\.com\/package|david-dm|snyk\.io|bundlephobia/i;
 
+/**
+ * A screenshot of the project's own website — the single biggest thing this was missing.
+ *
+ * Measured against the reference launch film, our event rate was half theirs and no amount
+ * of easing or stagger work moved it. The reason turned out to be structural rather than
+ * technical: their frames are FULL of real product UI, moving, and ours were typography on
+ * an empty ground. A headline has nothing in it to animate.
+ *
+ * Most real repos point at a live site. That site is the product, photographed — the same
+ * raw material the reference films are built out of, except we can fetch it automatically
+ * instead of a designer screenshotting and hand-slicing it.
+ *
+ * Two deliberate choices:
+ *
+ * The capture goes through a third-party service because the analysis runs serverless and
+ * a headless browser does not. Only the repository's own public homepage URL is ever sent,
+ * which is already published in the repo's GitHub metadata.
+ *
+ * The PNG is inlined as a data URI for the same reason the README artwork is: the film
+ * renders in the visitor's browser, and a remote image is subject to CORS on a host with no
+ * reason to allow us.
+ */
+async function readSiteShot(homepage: string | null): Promise<RepoFacts['siteShot']> {
+  if (!homepage) return null;
+  let target: URL;
+  try {
+    target = new URL(homepage);
+  } catch {
+    return null;
+  }
+  if (target.protocol !== 'https:' && target.protocol !== 'http:') return null;
+
+  try {
+    // `waitUntil=networkidle0` is load-bearing, not a nicety. Without it the capture of a
+    // JS-rendered site comes back a 605-byte solid colour — a blank page, screenshotted
+    // before it painted — and every modern project site is JS-rendered. With it, the same
+    // URL returns 601KB of real page.
+    const api =
+      `https://api.microlink.io/?url=${encodeURIComponent(target.toString())}` +
+      `&screenshot=true&meta=false&waitUntil=networkidle0`;
+    const res = await fetch(api, { headers: { 'User-Agent': 'sizzle' } });
+    if (!res.ok) return null;
+
+    const json = (await res.json()) as {
+      status?: string;
+      data?: { screenshot?: { url?: string; width?: number; height?: number } };
+    };
+    const shot = json?.data?.screenshot;
+    if (json.status !== 'success' || !shot?.url) return null;
+
+    const img = await fetch(shot.url, { headers: { 'User-Agent': 'sizzle' } });
+    if (!img.ok) return null;
+    const type = img.headers.get('content-type') ?? '';
+    if (!type.startsWith('image/')) return null;
+
+    const buf = Buffer.from(await img.arrayBuffer());
+    // Large enough to be a real page, small enough to inline into every spec.
+    if (buf.byteLength < 4_000 || buf.byteLength > 2_600_000) return null;
+
+    return {
+      dataUri: `data:${type.split(';')[0]};base64,${buf.toString('base64')}`,
+      width: shot.width ?? 1280,
+      height: shot.height ?? 800,
+      site: target.host.replace(/^www\./, ''),
+    };
+  } catch {
+    // No homepage, a dead host, or the service being slow are all normal. The film simply
+    // falls back to the shots it already had.
+    return null;
+  }
+}
+
 async function readArtwork(
   owner: string,
   repo: string,
@@ -335,9 +409,15 @@ export async function analyzeRepo(input: string): Promise<RepoFacts> {
   const readmeText = readme
     ? Buffer.from(readme.content, 'base64').toString('utf8')
     : null;
-  const artwork = readmeText
-    ? await readArtwork(owner, repo, meta.default_branch, readmeText).catch(() => null)
-    : null;
+  // Both fetch remote bytes and neither depends on the other, so they overlap. The
+  // screenshot is the slower of the two by a wide margin — it is a real page load on
+  // someone else's box — and it must never be able to fail the whole analysis.
+  const [artwork, siteShot] = await Promise.all([
+    readmeText
+      ? readArtwork(owner, repo, meta.default_branch, readmeText).catch(() => null)
+      : Promise.resolve(null),
+    readSiteShot(meta.homepage || null).catch(() => null),
+  ]);
 
   const totalBytes = Object.values(langs ?? {}).reduce((a, b) => a + b, 0) || 1;
 
@@ -369,6 +449,7 @@ export async function analyzeRepo(input: string): Promise<RepoFacts> {
     readmeFirstParagraph: readmeText ? firstParagraph(readmeText) : null,
     readmeIntro: readmeText ? readmeIntro(readmeText) : null,
     artwork,
+    siteShot,
     dependencies: deps,
     codeSample,
   };

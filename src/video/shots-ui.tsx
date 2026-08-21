@@ -264,7 +264,8 @@ export const Pointer: React.FC<UIShotProps> = ({ shot, accent, local, energy }) 
  */
 export const Artwork: React.FC<UIShotProps> = ({ shot, accent, local, energy, frameWidth }) => {
   const t = tokensFor(shot.tone, accent);
-  const src = shot.payload?.type === 'artwork' ? shot.payload.dataUri : null;
+  const screen = shot.payload?.type === 'screen' ? shot.payload : null;
+  const src = screen ? screen.dataUri : shot.payload?.type === 'artwork' ? shot.payload.dataUri : null;
   const e = entrance(local, 4, energy);
 
   // Settle toward square, and keep pushing very slightly the whole time so the panel
@@ -325,6 +326,48 @@ export const Artwork: React.FC<UIShotProps> = ({ shot, accent, local, energy, fr
           border: '1px solid ' + (shot.tone === 'paper' ? 'rgba(10,20,10,0.12)' : 'rgba(255,255,255,0.12)'),
         }}
       >
+        {/* Browser chrome, and only for a real site screenshot.
+            A bare screenshot floating on a ground reads as a picture OF a website. The
+            same pixels inside a window read as the software running — which is what the
+            reference films are built almost entirely out of, and the thing this had none
+            of. The chrome is deliberately minimal: a bar, three dots, the host. Anything
+            more starts imitating a specific browser and dates instantly. */}
+        {screen && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '0 20px',
+              height: 46,
+              background: shot.tone === 'paper' ? 'rgba(244,244,246,0.98)' : 'rgba(30,32,36,0.98)',
+              borderBottom:
+                '1px solid ' +
+                (shot.tone === 'paper' ? 'rgba(10,20,10,0.10)' : 'rgba(255,255,255,0.08)'),
+            }}
+          >
+            {['#ff5f57', '#febc2e', '#28c840'].map((dot) => (
+              <div
+                key={dot}
+                style={{ width: 12, height: 12, borderRadius: 6, background: dot, opacity: 0.9 }}
+              />
+            ))}
+            <div
+              style={{
+                marginLeft: 12,
+                padding: '5px 16px',
+                borderRadius: 7,
+                fontFamily: FONT.mono,
+                fontSize: 16,
+                color: shot.tone === 'paper' ? 'rgba(10,20,10,0.55)' : 'rgba(255,255,255,0.55)',
+                background:
+                  shot.tone === 'paper' ? 'rgba(10,20,10,0.05)' : 'rgba(255,255,255,0.06)',
+              }}
+            >
+              {screen.site}
+            </div>
+          </div>
+        )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
